@@ -162,7 +162,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     priority?: PriorityType;
     roomNumber?: string;
   }) => {
-    const activeRoom = rooms.find((r) => r.number === roomNumber);
+    const activeRoom = rooms.find((r) => r.hotelId === activeHotel.id && r.number === roomNumber);
     const guestName = activeRoom?.currentGuest?.name || 'Huésped Habitación ' + roomNumber;
 
     // Automatic sector classification if needed
@@ -204,7 +204,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     // Update room active request counter
     setRooms((prev) =>
-      prev.map((r) => (r.number === roomNumber ? { ...r, activeRequestsCount: r.activeRequestsCount + 1 } : r))
+      prev.map((r) => (r.hotelId === activeHotel.id && r.number === roomNumber ? { ...r, activeRequestsCount: r.activeRequestsCount + 1 } : r))
     );
 
     showToast(
@@ -341,7 +341,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (req?.roomNumber) {
       setRooms((prev) =>
         prev.map((r) =>
-          r.number === req.roomNumber ? { ...r, activeRequestsCount: Math.max(0, r.activeRequestsCount - 1) } : r
+          r.hotelId === req.hotelId && r.number === req.roomNumber ? { ...r, activeRequestsCount: Math.max(0, r.activeRequestsCount - 1) } : r
         )
       );
     }
@@ -387,7 +387,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     setRooms((prev) =>
       prev.map((r) =>
-        r.number === incidentData.roomNumber
+        r.hotelId === activeHotel.id && r.number === incidentData.roomNumber
           ? { ...r, status: 'mantenimiento', activeIssuesCount: r.activeIssuesCount + 1 }
           : r
       )
@@ -418,11 +418,11 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const bookExperience = (experienceId: string, roomNumber: string) => {
-    const exp = experiences.find((e) => e.id === experienceId);
+    const exp = experiences.find((e) => e.id === experienceId && e.hotelId === activeHotel.id);
     if (!exp) return;
 
     setExperiences((prev) =>
-      prev.map((e) => (e.id === experienceId ? { ...e, activeBookings: e.activeBookings + 1 } : e))
+      prev.map((e) => (e.id === experienceId && e.hotelId === activeHotel.id ? { ...e, activeBookings: e.activeBookings + 1 } : e))
     );
 
     // Create a request in reception
