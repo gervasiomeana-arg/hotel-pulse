@@ -65,6 +65,7 @@ export interface GuestRequest {
 
 export interface StaffMember {
   id: string;
+  hotelId: string;
   name: string;
   sector: SectorType;
   roleTitle: string;
