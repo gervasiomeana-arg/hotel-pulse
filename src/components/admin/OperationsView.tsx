@@ -17,6 +17,7 @@ import {
 
 export const OperationsView: React.FC = () => {
   const {
+    activeHotel,
     requests,
     staff,
     assignRequest,
@@ -45,8 +46,11 @@ export const OperationsView: React.FC = () => {
   // Quick assign modal
   const [assigningReqId, setAssigningReqId] = useState<string | null>(null);
 
+  const hotelRooms = rooms.filter((room) => room.hotelId === activeHotel.id);
+  const hotelRequests = requests.filter((req) => req.hotelId === activeHotel.id);
+
   // Filter logic
-  const filteredRequests = requests.filter((req) => {
+  const filteredRequests = hotelRequests.filter((req) => {
     if (filterRoom !== 'all' && req.roomNumber !== filterRoom) return false;
     if (filterSector !== 'all' && req.sector !== filterSector) return false;
     if (filterStatus !== 'all' && req.status !== filterStatus) return false;
@@ -150,7 +154,7 @@ export const OperationsView: React.FC = () => {
               className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-amber-400"
             >
               <option value="all">Todas las Habitaciones</option>
-              {rooms.map((r) => (
+              {hotelRooms.map((r) => (
                 <option key={r.id} value={r.number}>
                   Habitación {r.number} ({r.type})
                 </option>
