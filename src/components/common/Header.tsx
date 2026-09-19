@@ -25,6 +25,7 @@ export const Header: React.FC = () => {
     setGuestRoomNumber,
     requests,
     staff,
+    rooms,
     currentStaffId,
     resetDemoData,
     setGuidedTourActive,
@@ -82,25 +83,41 @@ export const Header: React.FC = () => {
                   <div className="px-3 py-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
                     Hoteles Registrados
                   </div>
-                  {availableHotels.map((hotel) => (
-                    <button
-                      key={hotel.id}
-                      id={`select-hotel-${hotel.id}`}
-                      onClick={() => {
-                        setActiveHotel(hotel);
-                        setHotelDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-800 transition-colors ${
-                        activeHotel.id === hotel.id ? 'text-amber-400 font-semibold bg-slate-800/50' : 'text-slate-300'
-                      }`}
-                    >
-                      <div>
-                        <div className="font-medium">{hotel.name}</div>
-                        <div className="text-[10px] text-slate-500">{hotel.city} • {hotel.totalRooms} habs</div>
-                      </div>
-                      {activeHotel.id === hotel.id && <span className="text-xs text-amber-400">●</span>}
-                    </button>
-                  ))}
+                  {availableHotels.map((hotel) => {
+                    const hasOperationalData = rooms.some((room) => room.hotelId === hotel.id);
+
+                    return (
+                      <button
+                        key={hotel.id}
+                        id={`select-hotel-${hotel.id}`}
+                        disabled={!hasOperationalData}
+                        onClick={() => {
+                          if (!hasOperationalData) return;
+                          setActiveHotel(hotel);
+                          setHotelDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors ${
+                          activeHotel.id === hotel.id
+                            ? 'text-amber-400 font-semibold bg-slate-800/50'
+                            : hasOperationalData
+                            ? 'text-slate-300 hover:bg-slate-800'
+                            : 'text-slate-500 cursor-not-allowed opacity-70'
+                        }`}
+                        title={!hasOperationalData ? 'Dataset demo aún no cargado para este hotel' : undefined}
+                      >
+                        <div>
+                          <div className="font-medium">{hotel.name}</div>
+                          <div className="text-[10px] text-slate-500">
+                            {hotel.city} • {hotel.totalRooms} habs
+                          </div>
+                          {!hasOperationalData && (
+                            <div className="text-[10px] text-amber-500/80 mt-0.5">Demo próximamente</div>
+                          )}
+                        </div>
+                        {activeHotel.id === hotel.id && <span className="text-xs text-amber-400">●</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
