@@ -16,12 +16,16 @@ import {
 } from 'lucide-react';
 
 export const RoomsView: React.FC = () => {
-  const { rooms, setGuestRoomNumber, setCurrentRole, requests, incidents } = useHotelPulse();
+  const { activeHotel, rooms, setGuestRoomNumber, setCurrentRole, requests, incidents } = useHotelPulse();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterFloor, setFilterFloor] = useState<string>('all');
   const [selectedRoomForQr, setSelectedRoomForQr] = useState<Room | null>(null);
 
-  const filteredRooms = rooms.filter((r) => {
+  const hotelRooms = rooms.filter((room) => room.hotelId === activeHotel.id);
+  const hotelRequests = requests.filter((request) => request.hotelId === activeHotel.id);
+  const hotelIncidents = incidents.filter((incident) => incident.hotelId === activeHotel.id);
+
+  const filteredRooms = hotelRooms.filter((r) => {
     if (filterStatus !== 'all' && r.status !== filterStatus) return false;
     if (filterFloor !== 'all' && r.floor.toString() !== filterFloor) return false;
     return true;
@@ -78,8 +82,8 @@ export const RoomsView: React.FC = () => {
       {/* ROOMS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {filteredRooms.map((room) => {
-          const roomRequests = requests.filter((r) => r.roomNumber === room.number && r.status !== 'resuelta');
-          const roomIncidents = incidents.filter((i) => i.roomNumber === room.number && i.status !== 'reparado');
+          const roomRequests = hotelRequests.filter((r) => r.roomNumber === room.number && r.status !== 'resuelta');
+          const roomIncidents = hotelIncidents.filter((i) => i.roomNumber === room.number && i.status !== 'reparado');
 
           let statusClass = 'bg-emerald-50 text-emerald-800 border-emerald-200';
           let statusText = 'Disponible';

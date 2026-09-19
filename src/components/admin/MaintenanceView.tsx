@@ -19,6 +19,7 @@ import {
 
 export const MaintenanceView: React.FC = () => {
   const {
+    activeHotel,
     incidents,
     rooms,
     staff,
@@ -28,6 +29,9 @@ export const MaintenanceView: React.FC = () => {
     selectedAssetHistory,
     setSelectedAssetHistory,
   } = useHotelPulse();
+
+  const hotelRooms = rooms.filter((room) => room.hotelId === activeHotel.id);
+  const hotelIncidents = incidents.filter((incident) => incident.hotelId === activeHotel.id);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [roomNumber, setRoomNumber] = useState('407');
@@ -311,7 +315,7 @@ export const MaintenanceView: React.FC = () => {
                     onChange={(e) => setRoomNumber(e.target.value)}
                     className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
                   >
-                    {rooms.map((r) => (
+                    {hotelRooms.map((r) => (
                       <option key={r.id} value={r.number}>
                         Habitación {r.number}
                       </option>
