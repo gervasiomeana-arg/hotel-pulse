@@ -219,7 +219,8 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // 2. Assign Request (Reception -> Staff)
   const assignRequest = (requestId: string, staffId: string) => {
     const staffMember = staff.find((s) => s.id === staffId);
-    if (!staffMember) return;
+    const currentRequest = requests.find((req) => req.id === requestId);
+    if (!staffMember || !currentRequest || currentRequest.status !== 'nueva') return;
 
     setRequests((prev) =>
       prev.map((req) => {
@@ -260,6 +261,9 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // 3. Staff Accept / In Transit
   const staffAcceptTask = (requestId: string) => {
+    const currentRequest = requests.find((req) => req.id === requestId);
+    if (!currentRequest || currentRequest.status !== 'asignada') return;
+
     setRequests((prev) =>
       prev.map((req) => {
         if (req.id === requestId) {
@@ -291,6 +295,9 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // 4. Staff Complete Task
   const staffCompleteTask = (requestId: string, notes?: string) => {
+    const req = requests.find((r) => r.id === requestId);
+    if (!req || req.status !== 'en_proceso') return;
+
     const completedTime = new Date();
     setRequests((prev) =>
       prev.map((req) => {
@@ -321,8 +328,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     );
 
     // Decrement staff active tasks
-    const req = requests.find((r) => r.id === requestId);
-    if (req?.assignedToId) {
+    if (req.assignedToId) {
       setStaff((prev) =>
         prev.map((s) =>
           s.id === req.assignedToId
@@ -348,8 +354,23 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const updateRequestStatus = (requestId: string, status: RequestStatus) => {
-    setRequests((prev) =>
-      prev.map((req) => (req.id === requestId ? { ...req, status } : req))
+    const req = requests.find((item) => item.id === requestId);
+    if (!req || req.status === status) return;
+
+    if (status === 'en_proceso' && req.status === 'asignada') {
+      staffAcceptTask(requestId);
+      return;
+    }
+
+    if (status === 'resuelta' && req.status === 'en_proceso') {
+      staffCompleteTask(requestId);
+      return;
+    }
+
+    showToast(
+      'Cambio de estado no permitido',
+      'La solicitud debe avanzar en orden: nueva → asignada → en proceso → resuelta.',
+      'warning'
     );
   };
 

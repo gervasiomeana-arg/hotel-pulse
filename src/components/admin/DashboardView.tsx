@@ -32,20 +32,23 @@ export const DashboardView: React.FC = () => {
     assetHistories,
   } = useHotelPulse();
 
-  // Computed metrics
+  // Computed metrics scoped to the active hotel
+  const hotelRooms = rooms.filter((r) => r.hotelId === activeHotel.id);
+  const hotelRequests = requests.filter((r) => r.hotelId === activeHotel.id);
+  const hotelIncidents = incidents.filter((i) => i.hotelId === activeHotel.id);
   const totalRooms = activeHotel.totalRooms;
-  const occupiedRooms = rooms.filter((r) => r.status === 'ocupada').length;
-  const occupancyRate = Math.round((occupiedRooms / rooms.length) * 100);
-  const totalGuests = rooms.reduce(
+  const occupiedRooms = hotelRooms.filter((r) => r.status === 'ocupada').length;
+  const occupancyRate = hotelRooms.length > 0 ? Math.round((occupiedRooms / hotelRooms.length) * 100) : 0;
+  const totalGuests = hotelRooms.reduce(
     (acc, r) => (r.status === 'ocupada' && r.currentGuest ? acc + r.currentGuest.guestsCount : acc),
     0
   );
 
-  const todayRequestsCount = requests.length;
-  const pendingRequestsCount = requests.filter((r) => r.status === 'nueva' || r.status === 'asignada').length;
+  const todayRequestsCount = hotelRequests.length;
+  const pendingRequestsCount = hotelRequests.filter((r) => r.status === 'nueva' || r.status === 'asignada').length;
 
   // Average response time
-  const resolvedRequests = requests.filter((r) => r.status === 'resuelta' && r.resolutionTimeMinutes);
+  const resolvedRequests = hotelRequests.filter((r) => r.status === 'resuelta' && r.resolutionTimeMinutes);
   const avgResponseTime =
     resolvedRequests.length > 0
       ? Math.round(
@@ -53,11 +56,11 @@ export const DashboardView: React.FC = () => {
         )
       : 14;
 
-  const criticalIncidentsCount = incidents.filter(
+  const criticalIncidentsCount = hotelIncidents.filter(
     (i) => i.status !== 'reparado' && (i.priority === 'alta' || i.priority === 'urgente')
   ).length;
 
-  const roomsWithIncidents = new Set(incidents.filter((i) => i.status !== 'reparado').map((i) => i.roomNumber)).size;
+  const roomsWithIncidents = new Set(hotelIncidents.filter((i) => i.status !== 'reparado').map((i) => i.roomNumber)).size;
 
   const totalUpsellRevenue = opportunities
     .filter((o) => o.status === 'aceptada' || o.status === 'propuesta_enviada')
@@ -130,7 +133,7 @@ export const DashboardView: React.FC = () => {
           </div>
           <div className="text-2xl font-black text-slate-900 mt-2 font-['Outfit']">{occupancyRate}%</div>
           <div className="text-[11px] text-slate-500 mt-1">
-            {occupiedRooms} de {rooms.length} habs ocupadas
+            {occupiedRooms} de {hotelRooms.length} habs cargadas
           </div>
         </div>
 
@@ -318,13 +321,13 @@ export const DashboardView: React.FC = () => {
               onClick={() => setAdminView('operaciones')}
               className="text-xs font-semibold text-amber-700 hover:text-amber-800 flex items-center gap-1"
             >
-              <span>Ver todas ({requests.length})</span>
+              <span>Ver todas ({hotelRequests.length})</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
           <div className="divide-y divide-slate-100">
-            {requests.slice(0, 4).map((req) => {
+            {hotelRequests.slice(0, 4).map((req) => {
               let statusBadge = (
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
                   {req.status}
