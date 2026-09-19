@@ -34,6 +34,7 @@ export const INITIAL_HOTELS: Hotel[] = [
 export const INITIAL_STAFF: StaffMember[] = [
   {
     id: 'staff-1',
+    hotelId: 'hotel-grand-pulse',
     name: 'Carlos Méndez',
     sector: 'housekeeping',
     roleTitle: 'Líder de Limpieza & Pisos',
@@ -44,6 +45,7 @@ export const INITIAL_STAFF: StaffMember[] = [
   },
   {
     id: 'staff-2',
+    hotelId: 'hotel-grand-pulse',
     name: 'Lucía Morales',
     sector: 'housekeeping',
     roleTitle: 'Supervisora de Habitaciones',
@@ -54,6 +56,7 @@ export const INITIAL_STAFF: StaffMember[] = [
   },
   {
     id: 'staff-3',
+    hotelId: 'hotel-grand-pulse',
     name: 'Roberto Silva',
     sector: 'maintenance',
     roleTitle: 'Jefe Técnico de Mantenimiento',
@@ -64,6 +67,7 @@ export const INITIAL_STAFF: StaffMember[] = [
   },
   {
     id: 'staff-4',
+    hotelId: 'hotel-grand-pulse',
     name: 'Diego Rossi',
     sector: 'room_service',
     roleTitle: 'Coordinador Alimentos y Bebidas',
@@ -74,6 +78,7 @@ export const INITIAL_STAFF: StaffMember[] = [
   },
   {
     id: 'staff-5',
+    hotelId: 'hotel-grand-pulse',
     name: 'Ana Valenzuela',
     sector: 'front_desk',
     roleTitle: 'Jefa de Recepción & Guest Service',
