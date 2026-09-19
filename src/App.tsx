@@ -12,6 +12,7 @@ import { RoomsView } from './components/admin/RoomsView';
 import { MaintenanceView } from './components/admin/MaintenanceView';
 import { OpportunitiesView } from './components/admin/OpportunitiesView';
 import { ExperiencesView } from './components/admin/ExperiencesView';
+import { ConfigurationView } from './components/admin/ConfigurationView';
 import { GuestPortal } from './components/guest/GuestPortal';
 import { StaffPortal } from './components/staff/StaffPortal';
 import { ReceptionView } from './components/reception/ReceptionView';
@@ -39,6 +40,7 @@ const MainLayout: React.FC = () => {
               {adminView === 'mantenimiento' && <MaintenanceView />}
               {adminView === 'oportunidades' && <OpportunitiesView />}
               {adminView === 'experiencias' && <ExperiencesView />}
+              {adminView === 'configuracion' && <ConfigurationView />}
             </main>
           </div>
         )}

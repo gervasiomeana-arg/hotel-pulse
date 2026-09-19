@@ -9,6 +9,7 @@ import {
   Sparkles,
   AlertCircle,
   Building,
+  Settings,
 } from 'lucide-react';
 
 interface NavItem {
@@ -22,9 +23,12 @@ interface NavItem {
 export const Sidebar: React.FC = () => {
   const { adminView, setAdminView, requests, incidents, opportunities, activeHotel } = useHotelPulse();
 
-  const pendingRequestsCount = requests.filter((r) => r.status === 'nueva' || r.status === 'asignada').length;
-  const criticalIncidentsCount = incidents.filter((i) => i.status !== 'reparado' && (i.priority === 'alta' || i.priority === 'urgente')).length;
-  const activeOpportunitiesCount = opportunities.filter((o) => o.status === 'candidato').length;
+  const hotelRequests = requests.filter((r) => r.hotelId === activeHotel.id);
+  const hotelIncidents = incidents.filter((i) => i.hotelId === activeHotel.id);
+  const hotelOpportunities = opportunities.filter((o) => o.hotelId === activeHotel.id);
+  const pendingRequestsCount = hotelRequests.filter((r) => r.status === 'nueva' || r.status === 'asignada').length;
+  const criticalIncidentsCount = hotelIncidents.filter((i) => i.status !== 'reparado' && (i.priority === 'alta' || i.priority === 'urgente')).length;
+  const activeOpportunitiesCount = hotelOpportunities.filter((o) => o.status === 'candidato').length;
 
   const navItems: NavItem[] = [
     {
@@ -55,13 +59,18 @@ export const Sidebar: React.FC = () => {
       id: 'oportunidades',
       label: 'Oportunidades',
       icon: TrendingUp,
-      badge: activeOpportunitiesCount > 0 ? `$${opportunities.reduce((acc, o) => acc + o.potentialRevenue, 0)}` : undefined,
+      badge: activeOpportunitiesCount > 0 ? `${hotelOpportunities.reduce((acc, o) => acc + o.potentialRevenue, 0)}` : undefined,
       badgeColor: 'bg-emerald-500/20 text-emerald-700 border border-emerald-300 font-bold',
     },
     {
       id: 'experiencias',
       label: 'Experiencias',
       icon: Sparkles,
+    },
+    {
+      id: 'configuracion',
+      label: 'Configuración',
+      icon: Settings,
     },
   ];
 

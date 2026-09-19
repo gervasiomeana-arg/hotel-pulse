@@ -26,7 +26,7 @@ import {
   INITIAL_ATTENTION_ITEMS,
 } from '../data/initialData';
 
-export type AdminViewType = 'dashboard' | 'operaciones' | 'habitaciones' | 'mantenimiento' | 'oportunidades' | 'experiencias';
+export type AdminViewType = 'dashboard' | 'operaciones' | 'habitaciones' | 'mantenimiento' | 'oportunidades' | 'experiencias' | 'configuracion';
 
 interface ToastNotification {
   id: string;
@@ -83,6 +83,11 @@ interface HotelPulseContextType {
   sendUpsellProposal: (id: string) => void;
   toggleExperience: (id: string) => void;
   bookExperience: (experienceId: string, roomNumber: string) => void;
+
+  // Hotel Configuration
+  addRoom: (room: Pick<Room, 'number' | 'type' | 'floor'>) => boolean;
+  addStaffMember: (member: Pick<StaffMember, 'name' | 'sector' | 'roleTitle' | 'phone'>) => void;
+  addExperience: (experience: Omit<ExperienceService, 'id' | 'hotelId' | 'activeBookings' | 'hotelCommissionAmount'>) => void;
 
   // Notification / Toast
   toasts: ToastNotification[];
@@ -439,6 +444,54 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     showToast('Reserva Registrada', `Se ha procesado la reserva de '${exp.title}' para la Hab. ${roomNumber}`, 'success');
   };
 
+  const addRoom = (room: Pick<Room, 'number' | 'type' | 'floor'>) => {
+    const normalizedNumber = room.number.trim();
+    const duplicate = rooms.some(
+      (existingRoom) => existingRoom.hotelId === activeHotel.id && existingRoom.number === normalizedNumber
+    );
+    if (!normalizedNumber || duplicate) {
+      showToast('Habitación no guardada', duplicate ? 'Ya existe una habitación con ese número en este hotel.' : 'Ingresá un número de habitación.', 'warning');
+      return false;
+    }
+
+    setRooms((prev) => [...prev, {
+      id: `room-${activeHotel.id}-${Date.now()}`,
+      hotelId: activeHotel.id,
+      number: normalizedNumber,
+      type: room.type,
+      floor: room.floor,
+      status: 'disponible',
+      activeIssuesCount: 0,
+      activeRequestsCount: 0,
+    }]);
+    showToast('Habitación agregada', `Habitación ${normalizedNumber} disponible en ${activeHotel.name}.`, 'success');
+    return true;
+  };
+
+  const addStaffMember = (member: Pick<StaffMember, 'name' | 'sector' | 'roleTitle' | 'phone'>) => {
+    setStaff((prev) => [...prev, {
+      ...member,
+      id: `staff-${Date.now()}`,
+      hotelId: activeHotel.id,
+      activeTasks: 0,
+      avatar: member.name.trim().split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
+      status: 'disponible',
+    }]);
+    showToast('Personal agregado', `${member.name} fue incorporado a ${activeHotel.name}.`, 'success');
+  };
+
+  const addExperience = (experience: Omit<ExperienceService, 'id' | 'hotelId' | 'activeBookings' | 'hotelCommissionAmount'>) => {
+    const commission = Number(((experience.price * experience.hotelCommissionRate) / 100).toFixed(2));
+    setExperiences((prev) => [...prev, {
+      ...experience,
+      id: `exp-${Date.now()}`,
+      hotelId: activeHotel.id,
+      activeBookings: 0,
+      hotelCommissionAmount: commission,
+    }]);
+    showToast('Servicio publicado', `${experience.title} ya forma parte del catálogo del hotel.`, 'success');
+  };
+
   const resetDemoData = () => {
     setRooms(INITIAL_ROOMS);
     setStaff(INITIAL_STAFF);
@@ -484,6 +537,9 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         sendUpsellProposal,
         toggleExperience,
         bookExperience,
+        addRoom,
+        addStaffMember,
+        addExperience,
         toasts,
         dismissToast,
         showToast,
