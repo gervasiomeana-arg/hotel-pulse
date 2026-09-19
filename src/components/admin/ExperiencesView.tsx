@@ -16,21 +16,23 @@ import {
 } from 'lucide-react';
 
 export const ExperiencesView: React.FC = () => {
-  const { experiences, toggleExperience, bookExperience, guestRoomNumber } = useHotelPulse();
+  const { activeHotel, experiences, toggleExperience, bookExperience, guestRoomNumber } = useHotelPulse();
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const filtered = experiences.filter((exp) => {
+  const hotelExperiences = experiences.filter((exp) => exp.hotelId === activeHotel.id);
+
+  const filtered = hotelExperiences.filter((exp) => {
     if (filterCategory !== 'all' && exp.category !== filterCategory) return false;
     return true;
   });
 
-  const totalCommissionsEarned = experiences.reduce(
+  const totalCommissionsEarned = hotelExperiences.reduce(
     (acc, e) => acc + e.hotelCommissionAmount * e.activeBookings,
     0
   );
 
-  const totalBookings = experiences.reduce((acc, e) => acc + e.activeBookings, 0);
+  const totalBookings = hotelExperiences.reduce((acc, e) => acc + e.activeBookings, 0);
 
   return (
     <div className="space-y-6 pb-12">
@@ -65,7 +67,7 @@ export const ExperiencesView: React.FC = () => {
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <span className="text-xs font-semibold text-slate-500 block">Servicios Publicados</span>
           <span className="text-2xl font-black text-slate-900 font-['Outfit'] mt-1 block">
-            {experiences.filter((e) => e.active).length} activos
+            {hotelExperiences.filter((e) => e.active).length} activos
           </span>
           <span className="text-[11px] text-slate-400">Visibles en portal de habitaciones</span>
         </div>
@@ -95,7 +97,7 @@ export const ExperiencesView: React.FC = () => {
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
-          Todos ({experiences.length})
+          Todos ({hotelExperiences.length})
         </button>
         <button
           onClick={() => setFilterCategory('spa')}

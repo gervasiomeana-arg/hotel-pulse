@@ -36,6 +36,7 @@ export const DashboardView: React.FC = () => {
   const hotelRooms = rooms.filter((r) => r.hotelId === activeHotel.id);
   const hotelRequests = requests.filter((r) => r.hotelId === activeHotel.id);
   const hotelIncidents = incidents.filter((i) => i.hotelId === activeHotel.id);
+  const hotelOpportunities = opportunities.filter((o) => o.hotelId === activeHotel.id);
   const totalRooms = activeHotel.totalRooms;
   const occupiedRooms = hotelRooms.filter((r) => r.status === 'ocupada').length;
   const occupancyRate = hotelRooms.length > 0 ? Math.round((occupiedRooms / hotelRooms.length) * 100) : 0;
@@ -62,9 +63,9 @@ export const DashboardView: React.FC = () => {
 
   const roomsWithIncidents = new Set(hotelIncidents.filter((i) => i.status !== 'reparado').map((i) => i.roomNumber)).size;
 
-  const totalUpsellRevenue = opportunities
-    .filter((o) => o.status === 'aceptada' || o.status === 'propuesta_enviada')
-    .reduce((acc, o) => acc + o.potentialRevenue, 185); // Baseline simulated sales
+  const totalUpsellRevenue = hotelOpportunities
+    .filter((o) => o.status === 'aceptada')
+    .reduce((acc, o) => acc + o.potentialRevenue, 0);
 
   const guestSatisfaction = '4.9 / 5.0'; // CSAT
 

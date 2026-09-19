@@ -111,6 +111,7 @@ export interface AssetMaintenanceHistory {
 
 export interface UpsellOpportunity {
   id: string;
+  hotelId: string;
   guestName: string;
   roomNumber: string;
   type: 'late_checkout' | 'parking' | 'gastronomy' | 'stay_extension';
@@ -125,6 +126,7 @@ export interface UpsellOpportunity {
 
 export interface ExperienceService {
   id: string;
+  hotelId: string;
   title: string;
   category: 'gastronomia' | 'espectaculos' | 'traslados' | 'estacionamiento' | 'excursiones' | 'spa' | 'actividades';
   provider: string;

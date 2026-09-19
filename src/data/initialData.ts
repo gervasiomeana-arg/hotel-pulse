@@ -377,6 +377,7 @@ export const ASSET_HISTORIES: Record<string, AssetMaintenanceHistory> = {
 export const INITIAL_UPSELL_OPPORTUNITIES: UpsellOpportunity[] = [
   {
     id: 'upsell-1',
+    hotelId: 'hotel-grand-pulse',
     guestName: 'Sofía Martínez',
     roomNumber: '304',
     type: 'late_checkout',
@@ -390,6 +391,7 @@ export const INITIAL_UPSELL_OPPORTUNITIES: UpsellOpportunity[] = [
   },
   {
     id: 'upsell-2',
+    hotelId: 'hotel-grand-pulse',
     guestName: 'Federico Gómez',
     roomNumber: '407',
     type: 'parking',
@@ -403,6 +405,7 @@ export const INITIAL_UPSELL_OPPORTUNITIES: UpsellOpportunity[] = [
   },
   {
     id: 'upsell-3',
+    hotelId: 'hotel-grand-pulse',
     guestName: 'Alejandro Sterling',
     roomNumber: '502',
     type: 'gastronomy',
@@ -416,6 +419,7 @@ export const INITIAL_UPSELL_OPPORTUNITIES: UpsellOpportunity[] = [
   },
   {
     id: 'upsell-4',
+    hotelId: 'hotel-grand-pulse',
     guestName: 'Martín & Clara Bauer',
     roomNumber: '201',
     type: 'stay_extension',
@@ -432,6 +436,7 @@ export const INITIAL_UPSELL_OPPORTUNITIES: UpsellOpportunity[] = [
 export const INITIAL_EXPERIENCES: ExperienceService[] = [
   {
     id: 'exp-1',
+    hotelId: 'hotel-grand-pulse',
     title: 'Ritual Spa Calm & Masaje Descontracturante (60 min)',
     category: 'spa',
     provider: 'Pulse Wellness & Spa',
@@ -448,6 +453,7 @@ export const INITIAL_EXPERIENCES: ExperienceService[] = [
   },
   {
     id: 'exp-2',
+    hotelId: 'hotel-grand-pulse',
     title: 'Traslado Ejecutivo VIP Aeropuerto Ezeiza / Aeroparque',
     category: 'traslados',
     provider: 'BlackCar Services Argentina',
@@ -464,6 +470,7 @@ export const INITIAL_EXPERIENCES: ExperienceService[] = [
   },
   {
     id: 'exp-3',
+    hotelId: 'hotel-grand-pulse',
     title: 'Noche de Gala & Tango Tradicional con Cena 3 Pasos',
     category: 'espectaculos',
     provider: 'Teatro Tango Palace Porteño',
@@ -480,6 +487,7 @@ export const INITIAL_EXPERIENCES: ExperienceService[] = [
   },
   {
     id: 'exp-4',
+    hotelId: 'hotel-grand-pulse',
     title: 'Cochera Cubierta Privada con Valet Parking 24hs',
     category: 'estacionamiento',
     provider: 'Estacionamiento Hotel Pulse',
@@ -496,6 +504,7 @@ export const INITIAL_EXPERIENCES: ExperienceService[] = [
   },
   {
     id: 'exp-5',
+    hotelId: 'hotel-grand-pulse',
     title: 'Cena de Pasos de Autor en Restaurante Aurelia',
     category: 'gastronomia',
     provider: 'Restaurante Aurelia & Wine Bar',
@@ -512,6 +521,7 @@ export const INITIAL_EXPERIENCES: ExperienceService[] = [
   },
   {
     id: 'exp-6',
+    hotelId: 'hotel-grand-pulse',
     title: 'Tour Arquitectónico & Cata Exclusiva de Vinos de Altura',
     category: 'excursiones',
     provider: 'Mendoza Wine Escapes',
