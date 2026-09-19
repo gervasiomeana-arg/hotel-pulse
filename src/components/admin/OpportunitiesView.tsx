@@ -17,17 +17,19 @@ import {
 } from 'lucide-react';
 
 export const OpportunitiesView: React.FC = () => {
-  const { opportunities, sendUpsellProposal } = useHotelPulse();
+  const { activeHotel, opportunities, sendUpsellProposal } = useHotelPulse();
   const [filterType, setFilterType] = useState<string>('all');
 
-  const filtered = opportunities.filter((o) => {
+  const hotelOpportunities = opportunities.filter((o) => o.hotelId === activeHotel.id);
+
+  const filtered = hotelOpportunities.filter((o) => {
     if (filterType !== 'all' && o.type !== filterType) return false;
     return true;
   });
 
-  const totalPotential = opportunities.reduce((acc, o) => acc + o.potentialRevenue, 0);
-  const totalSent = opportunities.filter((o) => o.status === 'propuesta_enviada').length;
-  const totalAccepted = opportunities.filter((o) => o.status === 'aceptada').length;
+  const totalPotential = hotelOpportunities.reduce((acc, o) => acc + o.potentialRevenue, 0);
+  const totalSent = hotelOpportunities.filter((o) => o.status === 'propuesta_enviada').length;
+  const totalAccepted = hotelOpportunities.filter((o) => o.status === 'aceptada').length;
 
   return (
     <div className="space-y-6 pb-12">
@@ -62,7 +64,7 @@ export const OpportunitiesView: React.FC = () => {
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <span className="text-xs font-semibold text-slate-500 block">Candidatos Detectados</span>
           <span className="text-2xl font-black text-slate-900 font-['Outfit'] mt-1 block">
-            {opportunities.length}
+            {hotelOpportunities.length}
           </span>
           <span className="text-[11px] text-slate-400">En base a checkout y hábitos</span>
         </div>
@@ -98,7 +100,7 @@ export const OpportunitiesView: React.FC = () => {
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
-          Todas ({opportunities.length})
+          Todas ({hotelOpportunities.length})
         </button>
         <button
           onClick={() => setFilterType('late_checkout')}
