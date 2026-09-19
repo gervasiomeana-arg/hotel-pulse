@@ -1,0 +1,6 @@
+{
+  "name": "Hotel Pulse",
+  "description": "Plataforma SaaS moderna de operaciones hoteleras, solicitudes de habitaciones en tiempo real, experiencia del huésped y gestión de mantenimiento.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
