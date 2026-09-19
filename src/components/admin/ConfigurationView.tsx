@@ -85,7 +85,7 @@ export const ConfigurationView: React.FC = () => {
       </div>
 
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-slate-700">
-        Esta configuración vive todavía en memoria del MVP. La próxima etapa conectará estos formularios a persistencia real y autenticación por hotel.
+        Los cambios se conservan en este navegador aunque recargues HOTEL PULSE. Esta persistencia local protege el MVP; la siguiente etapa será migrarla a una base de datos compartida con autenticación por hotel.
       </div>
     </div>
   );
