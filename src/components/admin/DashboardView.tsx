@@ -77,7 +77,8 @@ export const DashboardView: React.FC = () => {
   const candidateRevenue = hotelOpportunities
     .filter((opportunity) => opportunity.status === 'candidato')
     .reduce((sum, opportunity) => sum + opportunity.potentialRevenue, 0);
-  const busyStaff = staff.filter((member) => member.status === 'en_tarea').length;
+  const hotelStaff = staff.filter((member) => member.hotelId === activeHotel.id);
+  const busyStaff = hotelStaff.filter((member) => member.status === 'en_tarea').length;
 
   const attentionItems = [
     ...(urgentIncident
@@ -115,7 +116,7 @@ export const DashboardView: React.FC = () => {
       id: 'live-staff-load',
       severity: 'informativo' as const,
       title: `${busyStaff} miembro(s) del personal están en tarea`,
-      description: `${staff.length - busyStaff} miembro(s) figuran disponibles en el dataset actual.`,
+      description: `${hotelStaff.length - busyStaff} miembro(s) figuran disponibles en el dataset actual.`,
       actionLabel: 'Ver Operaciones',
       targetView: 'operaciones' as const,
     },
@@ -153,7 +154,7 @@ export const DashboardView: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="text-right">
             <div className="text-xs font-semibold text-slate-900">{activeHotel.city}</div>
-            <div className="text-[11px] text-slate-500">{staff.length} miembros cargados • {busyStaff} en tarea</div>
+            <div className="text-[11px] text-slate-500">{hotelStaff.length} miembros cargados • {busyStaff} en tarea</div>
           </div>
           <button
             id="view-live-operations-shortcut-btn"
