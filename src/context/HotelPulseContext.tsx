@@ -25,6 +25,7 @@ import {
   INITIAL_EXPERIENCES,
   INITIAL_ATTENTION_ITEMS,
 } from '../data/initialData';
+import { clearPersistedState, loadPersistedState, savePersistedState } from '../services/persistence';
 
 export type AdminViewType = 'dashboard' | 'operaciones' | 'habitaciones' | 'mantenimiento' | 'oportunidades' | 'experiencias' | 'configuracion';
 
@@ -110,6 +111,7 @@ interface HotelPulseContextType {
 const HotelPulseContext = createContext<HotelPulseContextType | undefined>(undefined);
 
 export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [initialPersistedState] = useState(() => loadPersistedState());
   const [currentRole, setCurrentRole] = useState<UserRole>('admin');
   const [adminView, setAdminView] = useState<AdminViewType>('dashboard');
   const [availableHotels] = useState<Hotel[]>(INITIAL_HOTELS);
@@ -118,17 +120,29 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [currentStaffId, setCurrentStaffId] = useState<string>('staff-1');
 
   // State collections
-  const [rooms, setRooms] = useState<Room[]>(INITIAL_ROOMS);
-  const [staff, setStaff] = useState<StaffMember[]>(INITIAL_STAFF);
-  const [requests, setRequests] = useState<GuestRequest[]>(INITIAL_REQUESTS);
-  const [incidents, setIncidents] = useState<MaintenanceIncident[]>(INITIAL_MAINTENANCE_INCIDENTS);
+  const [rooms, setRooms] = useState<Room[]>(initialPersistedState?.rooms ?? INITIAL_ROOMS);
+  const [staff, setStaff] = useState<StaffMember[]>(initialPersistedState?.staff ?? INITIAL_STAFF);
+  const [requests, setRequests] = useState<GuestRequest[]>(initialPersistedState?.requests ?? INITIAL_REQUESTS);
+  const [incidents, setIncidents] = useState<MaintenanceIncident[]>(initialPersistedState?.incidents ?? INITIAL_MAINTENANCE_INCIDENTS);
   const [assetHistories] = useState<Record<string, AssetMaintenanceHistory>>(ASSET_HISTORIES);
-  const [opportunities, setOpportunities] = useState<UpsellOpportunity[]>(INITIAL_UPSELL_OPPORTUNITIES);
-  const [experiences, setExperiences] = useState<ExperienceService[]>(INITIAL_EXPERIENCES);
+  const [opportunities, setOpportunities] = useState<UpsellOpportunity[]>(initialPersistedState?.opportunities ?? INITIAL_UPSELL_OPPORTUNITIES);
+  const [experiences, setExperiences] = useState<ExperienceService[]>(initialPersistedState?.experiences ?? INITIAL_EXPERIENCES);
   const [attentionItems] = useState<AttentionItem[]>(INITIAL_ATTENTION_ITEMS);
   const [selectedAssetHistory, setSelectedAssetHistory] = useState<AssetMaintenanceHistory | null>(
     ASSET_HISTORIES['asset-ac-407'] || null
   );
+
+  useEffect(() => {
+    savePersistedState({
+      version: 1,
+      rooms,
+      staff,
+      requests,
+      incidents,
+      opportunities,
+      experiences,
+    });
+  }, [rooms, staff, requests, incidents, opportunities, experiences]);
 
   // Notifications
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
@@ -493,6 +507,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const resetDemoData = () => {
+    clearPersistedState();
     setRooms(INITIAL_ROOMS);
     setStaff(INITIAL_STAFF);
     setRequests(INITIAL_REQUESTS);
