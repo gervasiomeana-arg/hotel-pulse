@@ -26,6 +26,8 @@ import {
   INITIAL_ATTENTION_ITEMS,
 } from '../data/initialData';
 import { clearPersistedState, loadPersistedState, savePersistedState } from '../services/persistence';
+import { getConfiguredDataSource } from '../services/backendContract';
+import { getAuthorizedHotels, supabaseRepository } from '../services/supabaseRepository';
 
 export type AdminViewType = 'dashboard' | 'operaciones' | 'habitaciones' | 'mantenimiento' | 'oportunidades' | 'experiencias' | 'configuracion';
 
@@ -111,10 +113,13 @@ interface HotelPulseContextType {
 const HotelPulseContext = createContext<HotelPulseContextType | undefined>(undefined);
 
 export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const remoteMode = getConfiguredDataSource() === 'remote';
   const [initialPersistedState] = useState(() => loadPersistedState());
   const [currentRole, setCurrentRole] = useState<UserRole>('admin');
   const [adminView, setAdminView] = useState<AdminViewType>('dashboard');
-  const [availableHotels] = useState<Hotel[]>(INITIAL_HOTELS);
+  const [availableHotels, setAvailableHotels] = useState<Hotel[]>(remoteMode ? [] : INITIAL_HOTELS);
+  const [remoteHotelsLoaded, setRemoteHotelsLoaded] = useState(!remoteMode);
+  const [remoteLoadError, setRemoteLoadError] = useState('');
   const [activeHotel, setActiveHotel] = useState<Hotel>(INITIAL_HOTELS[0]);
   const [guestRoomNumber, setGuestRoomNumber] = useState<string>('304');
   const [currentStaffId, setCurrentStaffId] = useState<string>('staff-1');
@@ -127,12 +132,14 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [assetHistories] = useState<Record<string, AssetMaintenanceHistory>>(ASSET_HISTORIES);
   const [opportunities, setOpportunities] = useState<UpsellOpportunity[]>(initialPersistedState?.opportunities ?? INITIAL_UPSELL_OPPORTUNITIES);
   const [experiences, setExperiences] = useState<ExperienceService[]>(initialPersistedState?.experiences ?? INITIAL_EXPERIENCES);
+  const [remoteHydratedHotelId, setRemoteHydratedHotelId] = useState<string | null>(null);
   const [attentionItems] = useState<AttentionItem[]>(INITIAL_ATTENTION_ITEMS);
   const [selectedAssetHistory, setSelectedAssetHistory] = useState<AssetMaintenanceHistory | null>(
     ASSET_HISTORIES['asset-ac-407'] || null
   );
 
   useEffect(() => {
+    if (remoteMode) return;
     savePersistedState({
       version: 1,
       rooms,
@@ -142,7 +149,42 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       opportunities,
       experiences,
     });
-  }, [rooms, staff, requests, incidents, opportunities, experiences]);
+  }, [remoteMode, rooms, staff, requests, incidents, opportunities, experiences]);
+
+  useEffect(() => {
+    if (!remoteMode) return;
+    let active = true;
+    getAuthorizedHotels().then((hotels) => {
+      if (!active) return;
+      setAvailableHotels(hotels);
+      if (hotels.length && !hotels.some((hotel) => hotel.id === activeHotel.id)) setActiveHotel(hotels[0]);
+      if (!hotels.length) setRemoteLoadError('Tu usuario todavía no tiene un hotel asignado. Agregalo a hotel_members desde Supabase.');
+    }).catch((error) => setRemoteLoadError(error instanceof Error ? error.message : 'No se pudieron cargar los hoteles autorizados.'))
+      .finally(() => { if (active) setRemoteHotelsLoaded(true); });
+    return () => { active = false; };
+  }, [remoteMode]);
+
+  useEffect(() => {
+    if (!remoteMode || !remoteHotelsLoaded || !availableHotels.some((hotel) => hotel.id === activeHotel.id)) return;
+    let active = true;
+    setRemoteHydratedHotelId(null);
+    supabaseRepository.loadState(activeHotel.id).then((state) => {
+      if (!active || !state) return;
+      setRooms(state.rooms); setStaff(state.staff); setRequests(state.requests);
+      setIncidents(state.incidents); setOpportunities(state.opportunities); setExperiences(state.experiences);
+      setRemoteHydratedHotelId(activeHotel.id);
+    }).catch((error) => console.error('No se pudieron cargar los datos del hotel', error));
+    return () => { active = false; };
+  }, [remoteMode, remoteHotelsLoaded, activeHotel.id, availableHotels]);
+
+  useEffect(() => {
+    if (!remoteMode || remoteHydratedHotelId !== activeHotel.id) return;
+    const timer = window.setTimeout(() => {
+      supabaseRepository.saveState(activeHotel.id, { version: 1, rooms, staff, requests, incidents, opportunities, experiences })
+        .catch((error) => console.error('No se pudieron guardar los datos del hotel', error));
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [remoteMode, remoteHydratedHotelId, activeHotel.id, rooms, staff, requests, incidents, opportunities, experiences]);
 
   // Notifications
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
@@ -507,6 +549,10 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const resetDemoData = () => {
+    if (remoteMode) {
+      showToast('Acción no disponible', 'Los datos compartidos no se reinician desde el modo de demostración.', 'warning');
+      return;
+    }
     clearPersistedState();
     setRooms(INITIAL_ROOMS);
     setStaff(INITIAL_STAFF);
@@ -519,6 +565,10 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const nextTourStep = () => setTourStep((prev) => prev + 1);
   const prevTourStep = () => setTourStep((prev) => Math.max(0, prev - 1));
+
+  if (remoteMode && (!remoteHotelsLoaded || remoteLoadError)) {
+    return <main className="min-h-screen bg-slate-950 grid place-items-center p-6"><div className="max-w-lg rounded-3xl bg-white p-8"><h1 className="text-xl font-bold text-slate-900">{remoteLoadError ? 'No se pudo abrir Hotel Pulse' : 'Cargando hoteles…'}</h1><p className="mt-2 text-slate-600">{remoteLoadError || 'Buscando los hoteles autorizados para tu usuario.'}</p></div></main>;
+  }
 
   return (
     <HotelPulseContext.Provider

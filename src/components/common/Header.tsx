@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useHotelPulse } from '../../context/HotelPulseContext';
 import { UserRole } from '../../types';
+import { getConfiguredDataSource } from '../../services/backendContract';
 import {
   Building2,
   ChevronDown,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
+  const remoteMode = getConfiguredDataSource() === 'remote';
   const {
     currentRole,
     setCurrentRole,
@@ -84,7 +86,7 @@ export const Header: React.FC = () => {
                     Hoteles Registrados
                   </div>
                   {availableHotels.map((hotel) => {
-                    const hasOperationalData = rooms.some((room) => room.hotelId === hotel.id);
+                    const hasOperationalData = remoteMode || rooms.some((room) => room.hotelId === hotel.id);
 
                     return (
                       <button

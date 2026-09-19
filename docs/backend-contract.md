@@ -54,6 +54,11 @@ Los identificadores de habitación sólo necesitan ser únicos dentro de un hote
 6. Acciones sensibles deben registrar actor y fecha.
 7. Configuración requiere rol admin.
 
-## Próxima implementación
+## Implementación disponible
 
-La UI actual usa persistencia local. El adaptador remoto deberá implementar `HotelPulseRepository` sin obligar a reescribir los componentes visuales.
+El adaptador remoto de Supabase implementa `HotelPulseRepository` sin reescribir los componentes visuales. La selección se controla con `VITE_DATA_SOURCE`:
+
+- `local`: usa `localStorage`, apropiado para la demo aislada;
+- `remote`: exige una sesión de Supabase, obtiene los hoteles desde `hotel_members` y sincroniza las seis colecciones con PostgreSQL.
+
+La migración versionada vive en `supabase/migrations/`. Todas las tablas tienen RLS y las escrituras se validan contra el rol de la membresía. El cambio de estado de solicitudes también se valida en PostgreSQL.
