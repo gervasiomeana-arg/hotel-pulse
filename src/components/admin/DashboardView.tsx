@@ -26,7 +26,7 @@ export const DashboardView: React.FC = () => {
     requests,
     incidents,
     opportunities,
-    attentionItems,
+    staff,
     setAdminView,
     setSelectedAssetHistory,
     assetHistories,
@@ -37,7 +37,6 @@ export const DashboardView: React.FC = () => {
   const hotelRequests = requests.filter((r) => r.hotelId === activeHotel.id);
   const hotelIncidents = incidents.filter((i) => i.hotelId === activeHotel.id);
   const hotelOpportunities = opportunities.filter((o) => o.hotelId === activeHotel.id);
-  const totalRooms = activeHotel.totalRooms;
   const occupiedRooms = hotelRooms.filter((r) => r.status === 'ocupada').length;
   const occupancyRate = hotelRooms.length > 0 ? Math.round((occupiedRooms / hotelRooms.length) * 100) : 0;
   const totalGuests = hotelRooms.reduce(
@@ -55,7 +54,7 @@ export const DashboardView: React.FC = () => {
       ? Math.round(
           resolvedRequests.reduce((acc, r) => acc + (r.resolutionTimeMinutes || 0), 0) / resolvedRequests.length
         )
-      : 14;
+      : null;
 
   const criticalIncidentsCount = hotelIncidents.filter(
     (i) => i.status !== 'reparado' && (i.priority === 'alta' || i.priority === 'urgente')
@@ -67,11 +66,67 @@ export const DashboardView: React.FC = () => {
     .filter((o) => o.status === 'aceptada')
     .reduce((acc, o) => acc + o.potentialRevenue, 0);
 
-  const guestSatisfaction = '4.9 / 5.0'; // CSAT
+  const delayedRequests = hotelRequests.filter(
+    (request) =>
+      request.status !== 'resuelta' &&
+      Date.now() - new Date(request.createdAt).getTime() > 15 * 60 * 1000
+  );
+  const urgentIncident = hotelIncidents.find(
+    (incident) => incident.status !== 'reparado' && (incident.priority === 'urgente' || incident.priority === 'alta')
+  );
+  const candidateRevenue = hotelOpportunities
+    .filter((opportunity) => opportunity.status === 'candidato')
+    .reduce((sum, opportunity) => sum + opportunity.potentialRevenue, 0);
+  const busyStaff = staff.filter((member) => member.status === 'en_tarea').length;
+
+  const attentionItems = [
+    ...(urgentIncident
+      ? [{
+          id: 'live-critical-incident',
+          severity: 'urgente' as const,
+          title: `Incidencia prioritaria en habitación ${urgentIncident.roomNumber}`,
+          description: `${urgentIncident.assetName}: ${urgentIncident.description}`,
+          actionLabel: 'Ir a Mantenimiento',
+          targetView: 'mantenimiento' as const,
+          relatedRoom: urgentIncident.roomNumber,
+        }]
+      : []),
+    ...(delayedRequests.length > 0
+      ? [{
+          id: 'live-delayed-requests',
+          severity: 'alerta' as const,
+          title: `${delayedRequests.length} solicitud(es) superan los 15 minutos`,
+          description: 'Hay pedidos activos que requieren seguimiento operativo.',
+          actionLabel: 'Ir a Operaciones',
+          targetView: 'operaciones' as const,
+        }]
+      : []),
+    ...(candidateRevenue > 0
+      ? [{
+          id: 'live-upsell',
+          severity: 'oportunidad' as const,
+          title: `USD ${candidateRevenue} de ingreso potencial detectado`,
+          description: `${hotelOpportunities.filter((o) => o.status === 'candidato').length} oportunidades comerciales siguen pendientes de propuesta.`,
+          actionLabel: 'Ver Oportunidades',
+          targetView: 'oportunidades' as const,
+        }]
+      : []),
+    {
+      id: 'live-staff-load',
+      severity: 'informativo' as const,
+      title: `${busyStaff} miembro(s) del personal están en tarea`,
+      description: `${staff.length - busyStaff} miembro(s) figuran disponibles en el dataset actual.`,
+      actionLabel: 'Ver Operaciones',
+      targetView: 'operaciones' as const,
+    },
+  ];
 
   const handleAttentionAction = (item: (typeof attentionItems)[0]) => {
-    if (item.targetView === 'mantenimiento' && item.relatedRoom === '407') {
-      setSelectedAssetHistory(assetHistories['asset-ac-407'] || null);
+    if (item.targetView === 'mantenimiento' && item.relatedRoom) {
+      const incident = hotelIncidents.find((entry) => entry.roomNumber === item.relatedRoom);
+      if (incident?.historyAssetId) {
+        setSelectedAssetHistory(assetHistories[incident.historyAssetId] || null);
+      }
     }
     setAdminView(item.targetView as AdminViewType);
   };
@@ -97,8 +152,8 @@ export const DashboardView: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <div className="text-xs font-semibold text-slate-900">Buenos Aires (GMT-3)</div>
-            <div className="text-[11px] text-slate-500">Turno Tarde Activo • 12 miembros en servicio</div>
+            <div className="text-xs font-semibold text-slate-900">{activeHotel.city}</div>
+            <div className="text-[11px] text-slate-500">{staff.length} miembros cargados • {busyStaff} en tarea</div>
           </div>
           <button
             id="view-live-operations-shortcut-btn"
@@ -122,7 +177,7 @@ export const DashboardView: React.FC = () => {
           <div className="text-2xl font-black text-slate-900 mt-2 font-['Outfit']">{totalGuests}</div>
           <div className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-1">
             <TrendingUp className="w-3 h-3" />
-            <span>+4 vs ayer</span>
+            <span>Datos del hotel activo</span>
           </div>
         </div>
 
@@ -171,7 +226,7 @@ export const DashboardView: React.FC = () => {
             <Timer className="w-4 h-4 text-purple-600" />
           </div>
           <div className="text-2xl font-black text-slate-900 mt-2 font-['Outfit']">
-            {avgResponseTime} <span className="text-sm font-normal text-slate-500">min</span>
+            {avgResponseTime ?? '—'} {avgResponseTime !== null && <span className="text-sm font-normal text-slate-500">min</span>}
           </div>
           <div className="text-[11px] text-slate-500 mt-1">Objetivo hotel: &lt; 15 min</div>
         </div>
@@ -185,7 +240,7 @@ export const DashboardView: React.FC = () => {
           <div className="text-2xl font-black text-rose-600 mt-2 font-['Outfit']">
             {criticalIncidentsCount}
           </div>
-          <div className="text-[11px] text-rose-600 font-medium mt-1">HVAC Hab. 407 urgente</div>
+          <div className="text-[11px] text-rose-600 font-medium mt-1">{criticalIncidentsCount > 0 ? 'Requiere atención' : 'Sin críticos activos'}</div>
         </div>
 
         {/* 7. Habitaciones con incidencias */}
@@ -197,7 +252,7 @@ export const DashboardView: React.FC = () => {
           <div className="text-2xl font-black text-slate-900 mt-2 font-['Outfit']">
             {roomsWithIncidents}
           </div>
-          <div className="text-[11px] text-slate-500 mt-1">Hab. 407, Hab. 412</div>
+          <div className="text-[11px] text-slate-500 mt-1">{roomsWithIncidents > 0 ? 'Incidencias abiertas' : 'Sin incidencias abiertas'}</div>
         </div>
 
         {/* 8. Ventas adicionales */}
@@ -209,7 +264,7 @@ export const DashboardView: React.FC = () => {
           <div className="text-2xl font-black text-emerald-700 mt-2 font-['Outfit']">
             ${totalUpsellRevenue} <span className="text-xs font-normal text-slate-500">USD</span>
           </div>
-          <div className="text-[11px] text-emerald-600 font-medium mt-1">+18% vs semana pasada</div>
+          <div className="text-[11px] text-emerald-600 font-medium mt-1">Ingresos confirmados</div>
         </div>
 
         {/* 9. Satisfacción de huéspedes */}
@@ -218,10 +273,8 @@ export const DashboardView: React.FC = () => {
             <span className="text-xs font-semibold">Satisfacción Huéspedes</span>
             <HeartHandshake className="w-4 h-4 text-rose-500" />
           </div>
-          <div className="text-2xl font-black text-slate-900 mt-2 font-['Outfit']">
-            {guestSatisfaction}
-          </div>
-          <div className="text-[11px] text-emerald-600 font-medium mt-1">NPS 88 (Excelente)</div>
+          <div className="text-2xl font-black text-slate-900 mt-2 font-['Outfit']">—</div>
+          <div className="text-[11px] text-slate-500 font-medium mt-1">Pendiente de integrar encuestas reales</div>
         </div>
       </div>
 
@@ -238,11 +291,11 @@ export const DashboardView: React.FC = () => {
                   ¿Qué necesita mi atención hoy?
                 </h2>
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-slate-950 uppercase">
-                  IA Pulse Insight
+                  Pulse Insight
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Análisis heurístico de patrones operacionales, cuellos de botella y oportunidades de ingreso inmediatas.
+                Alertas generadas automáticamente a partir de solicitudes, incidencias y oportunidades del hotel activo.
               </p>
             </div>
           </div>
