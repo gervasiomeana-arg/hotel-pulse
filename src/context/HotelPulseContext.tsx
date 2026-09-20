@@ -157,6 +157,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     let active = true;
     Promise.all([getAuthorizedHotels(), getAuthorizedMemberships()]).then(([hotels, memberships]) => {
       if (!active) return;
+      setRemoteLoadError('');
       setAuthorizedMemberships(memberships);
       if (hotels.length > 0) {
         setAvailableHotels(hotels);
@@ -168,14 +169,13 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           if (membership.staffId) setCurrentStaffId(membership.staffId);
         }
       } else {
-        // Safe fallback to default demo hotels so app is fully operational
-        setAvailableHotels(INITIAL_HOTELS);
-        setActiveHotel(INITIAL_HOTELS[0]);
+        setAvailableHotels([]);
+        setRemoteLoadError('Tu usuario inició sesión correctamente, pero todavía no tiene hoteles asignados. Un administrador debe vincularlo en hotel_members.');
       }
     }).catch((error) => {
-      console.warn('No se pudieron cargar los hoteles autorizados de Supabase, usando hoteles de demostración:', error);
-      setAvailableHotels(INITIAL_HOTELS);
-      setActiveHotel(INITIAL_HOTELS[0]);
+      console.error('No se pudieron cargar los hoteles autorizados de Supabase:', error);
+      setAvailableHotels([]);
+      setRemoteLoadError('No pudimos consultar tus hoteles autorizados. Revisá la conexión e intentá iniciar sesión nuevamente.');
     }).finally(() => {
       if (active) setRemoteHotelsLoaded(true);
     });
@@ -214,7 +214,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setRemoteHydratedHotelId(targetHotelId);
     }).catch((error) => {
       console.error('No se pudieron cargar los datos del hotel de Supabase:', error);
-      setRemoteHydratedHotelId(targetHotelId);
+      setRemoteLoadError('No pudimos cargar la información operativa del hotel. No se realizaron cambios.');
     });
     return () => { active = false; };
   }, [remoteMode, remoteHotelsLoaded, activeHotel?.id]);
