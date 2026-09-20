@@ -50,6 +50,9 @@ export const OperationsView: React.FC = () => {
   const hotelRooms = rooms.filter((room) => room.hotelId === activeHotelId);
   const hotelRequests = requests.filter((req) => req.hotelId === activeHotelId);
   const hotelStaff = staff.filter((member) => member.hotelId === activeHotelId);
+  const getActiveTaskCount = (staffId: string) => hotelRequests.filter(
+    (request) => request.assignedToId === staffId && (request.status === 'asignada' || request.status === 'en_proceso')
+  ).length;
 
   // Filter logic
   const filteredRequests = hotelRequests.filter((req) => {
@@ -486,12 +489,12 @@ export const OperationsView: React.FC = () => {
                   <div className="text-right text-[11px]">
                     <span
                       className={`px-2 py-0.5 rounded-full font-semibold ${
-                        member.status === 'disponible'
+                        getActiveTaskCount(member.id) === 0
                           ? 'bg-emerald-100 text-emerald-800'
                           : 'bg-amber-100 text-amber-800'
                       }`}
                     >
-                      {member.activeTasks} tareas activas
+                      {getActiveTaskCount(member.id)} tareas activas
                     </span>
                   </div>
                 </button>
