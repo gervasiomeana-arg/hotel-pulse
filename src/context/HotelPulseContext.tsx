@@ -108,6 +108,8 @@ interface HotelPulseContextType {
   tourStep: number;
   nextTourStep: () => void;
   prevTourStep: () => void;
+  remoteSaveError: string;
+  retryRemoteSave: () => void;
 }
 
 const HotelPulseContext = createContext<HotelPulseContextType | undefined>(undefined);
@@ -120,6 +122,8 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [availableHotels, setAvailableHotels] = useState<Hotel[]>(remoteMode ? [] : INITIAL_HOTELS);
   const [remoteHotelsLoaded, setRemoteHotelsLoaded] = useState(!remoteMode);
   const [remoteLoadError, setRemoteLoadError] = useState('');
+  const [remoteSaveError, setRemoteSaveError] = useState('');
+  const [remoteSaveRevision, setRemoteSaveRevision] = useState(0);
   const [activeHotel, setActiveHotel] = useState<Hotel>(INITIAL_HOTELS[0]);
   const [guestRoomNumber, setGuestRoomNumber] = useState<string>('304');
   const [currentStaffId, setCurrentStaffId] = useState<string>('staff-1');
@@ -216,10 +220,14 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (!remoteMode || remoteHydratedHotelId !== activeHotel.id) return;
     const timer = window.setTimeout(() => {
       supabaseRepository.saveState(activeHotel.id, { version: 1, rooms, staff, requests, incidents, opportunities, experiences })
-        .catch((error) => console.error('No se pudieron guardar los datos del hotel', error));
+        .then(() => setRemoteSaveError(''))
+        .catch((error) => {
+          console.error('No se pudieron guardar los datos del hotel', error);
+          setRemoteSaveError('No pudimos confirmar los últimos cambios en Supabase. Revisá la conexión y volvé a intentar.');
+        });
     }, 400);
     return () => window.clearTimeout(timer);
-  }, [remoteMode, remoteHydratedHotelId, activeHotel.id, rooms, staff, requests, incidents, opportunities, experiences]);
+  }, [remoteMode, remoteHydratedHotelId, activeHotel.id, rooms, staff, requests, incidents, opportunities, experiences, remoteSaveRevision]);
 
   // Notifications
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
@@ -300,9 +308,11 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setRequests((prev) => [newReq, ...prev]);
 
     // Update room active request counter
-    setRooms((prev) =>
-      prev.map((r) => (r.hotelId === activeHotelId && r.number === roomNumber ? { ...r, activeRequestsCount: r.activeRequestsCount + 1 } : r))
-    );
+    if (!remoteMode) {
+      setRooms((prev) =>
+        prev.map((r) => (r.hotelId === activeHotelId && r.number === roomNumber ? { ...r, activeRequestsCount: r.activeRequestsCount + 1 } : r))
+      );
+    }
 
     showToast(
       '¡Solicitud Registrada!',
@@ -349,9 +359,11 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     );
 
     // Update staff active tasks count
-    setStaff((prev) =>
-      prev.map((s) => (s.id === staffId ? { ...s, activeTasks: s.activeTasks + 1, status: 'en_tarea' } : s))
-    );
+    if (!remoteMode) {
+      setStaff((prev) =>
+        prev.map((s) => (s.id === staffId ? { ...s, activeTasks: s.activeTasks + 1, status: 'en_tarea' } : s))
+      );
+    }
 
     showToast(
       'Tarea Asignada',
@@ -429,7 +441,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     );
 
     // Decrement staff active tasks
-    if (req.assignedToId) {
+    if (!remoteMode && req.assignedToId) {
       setStaff((prev) =>
         prev.map((s) =>
           s.id === req.assignedToId
@@ -439,7 +451,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       );
     }
 
-    if (req?.roomNumber) {
+    if (!remoteMode && req?.roomNumber) {
       setRooms((prev) =>
         prev.map((r) =>
           r.hotelId === req.hotelId && r.number === req.roomNumber ? { ...r, activeRequestsCount: Math.max(0, r.activeRequestsCount - 1) } : r
@@ -487,13 +499,15 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     setIncidents((prev) => [newInc, ...prev]);
 
-    setRooms((prev) =>
-      prev.map((r) =>
-        r.hotelId === activeHotelId && r.number === incidentData.roomNumber
-          ? { ...r, status: 'mantenimiento', activeIssuesCount: r.activeIssuesCount + 1 }
-          : r
-      )
-    );
+    if (!remoteMode) {
+      setRooms((prev) =>
+        prev.map((r) =>
+          r.hotelId === activeHotelId && r.number === incidentData.roomNumber
+            ? { ...r, status: 'mantenimiento', activeIssuesCount: r.activeIssuesCount + 1 }
+            : r
+        )
+      );
+    }
 
     showToast('Incidencia Creada', `Reportada en Habitación ${incidentData.roomNumber}: ${incidentData.assetName}`, 'warning');
   };
@@ -611,6 +625,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const nextTourStep = () => setTourStep((prev) => prev + 1);
   const prevTourStep = () => setTourStep((prev) => Math.max(0, prev - 1));
+  const retryRemoteSave = () => setRemoteSaveRevision((revision) => revision + 1);
 
   if (remoteMode && (!remoteHotelsLoaded || remoteLoadError || remoteHydratedHotelId !== activeHotel.id)) {
     const loadingMessage = remoteHotelsLoaded
@@ -665,6 +680,8 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         tourStep,
         nextTourStep,
         prevTourStep,
+        remoteSaveError,
+        retryRemoteSave,
       }}
     >
       {children}

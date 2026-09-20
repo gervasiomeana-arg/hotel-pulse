@@ -79,7 +79,11 @@ export const DashboardView: React.FC = () => {
     .filter((opportunity) => opportunity.status === 'candidato')
     .reduce((sum, opportunity) => sum + opportunity.potentialRevenue, 0);
   const hotelStaff = staff.filter((member) => member.hotelId === activeHotel.id);
-  const busyStaff = hotelStaff.filter((member) => member.status === 'en_tarea').length;
+  const busyStaff = new Set(
+    hotelRequests
+      .filter((request) => request.assignedToId && (request.status === 'asignada' || request.status === 'en_proceso'))
+      .map((request) => request.assignedToId)
+  ).size;
 
   const attentionItems = [
     ...(urgentIncident
