@@ -1,4 +1,5 @@
 import { PersistedHotelPulseState } from './persistence';
+import { publicSupabaseConfigured } from './publicConfig';
 
 export type HotelPulseDataSource = 'local' | 'remote';
 
@@ -14,9 +15,11 @@ export interface HotelPulseRepository {
   saveState(hotelId: string, state: PersistedHotelPulseState): Promise<void>;
 }
 
-export const getConfiguredDataSource = (): HotelPulseDataSource =>
-  import.meta.env.VITE_DATA_SOURCE === 'remote' ? 'remote' : 'local';
+export const getConfiguredDataSource = (): HotelPulseDataSource => {
+  if (import.meta.env.VITE_DATA_SOURCE === 'local') return 'local';
+  return import.meta.env.VITE_DATA_SOURCE === 'remote' || publicSupabaseConfigured ? 'remote' : 'local';
+};
 
 export const remoteBackendConfigured = (): boolean =>
   getConfiguredDataSource() === 'remote' &&
-  Boolean(import.meta.env.VITE_SUPABASE_URL?.trim() && import.meta.env.VITE_SUPABASE_ANON_KEY?.trim());
+  publicSupabaseConfigured;
