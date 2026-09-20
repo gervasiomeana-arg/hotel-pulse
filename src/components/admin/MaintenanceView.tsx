@@ -185,15 +185,15 @@ export const MaintenanceView: React.FC = () => {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-bold text-slate-900 font-['Outfit']">
-            Incidencias Activas ({incidents.length})
+            Incidencias Activas ({hotelIncidents.length})
           </h2>
           <span className="text-xs text-slate-500">
-            {incidents.filter((i) => i.status !== 'reparado').length} pendientes de resolución
+            {hotelIncidents.filter((i) => i.status !== 'reparado').length} pendientes de resolución
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {incidents.map((incident) => {
+          {hotelIncidents.map((incident) => {
             let priorityPill = (
               <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-700">
                 {incident.priority}
