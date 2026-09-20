@@ -75,10 +75,10 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-64 shrink-0 bg-white border-r border-slate-200 flex flex-col justify-between min-h-[calc(100vh-4rem)]">
-      <div className="p-4">
+    <aside className="w-full md:w-64 shrink-0 bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col justify-between md:min-h-[calc(100vh-4rem)] md:sticky md:top-16 md:self-start">
+      <div className="p-2 md:p-4">
         {/* Active Property Card */}
-        <div className="mb-6 p-3 bg-slate-50 border border-slate-200/80 rounded-xl">
+        <div className="hidden md:block mb-6 p-3 bg-slate-50 border border-slate-200/80 rounded-xl">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-800 font-bold text-xs">
               <Building className="w-4 h-4 text-amber-700" />
@@ -91,8 +91,8 @@ export const Sidebar: React.FC = () => {
         </div>
 
         {/* Navigation Section */}
-        <div className="space-y-1">
-          <div className="px-3 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+        <div className="flex gap-1 overflow-x-auto pb-1 md:block md:space-y-1 md:overflow-visible md:pb-0 scrollbar-none" aria-label="Navegación de administración">
+          <div className="hidden md:block px-3 pb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
             Gestión Hotelera
           </div>
           {navItems.map((item) => {
@@ -103,7 +103,7 @@ export const Sidebar: React.FC = () => {
                 key={item.id}
                 id={`admin-nav-${item.id}`}
                 onClick={() => setAdminView(item.id)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                className={`shrink-0 md:w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
                   isActive
                     ? 'bg-slate-900 text-white font-semibold shadow-sm'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -111,7 +111,7 @@ export const Sidebar: React.FC = () => {
               >
                 <div className="flex items-center gap-3">
                   <Icon className={`w-4 h-4 ${isActive ? 'text-amber-400' : 'text-slate-400'}`} />
-                  <span>{item.label}</span>
+                  <span className="whitespace-nowrap">{item.label}</span>
                 </div>
                 {item.badge && (
                   <span
@@ -129,7 +129,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Bottom info widget */}
-      <div className="p-4 border-t border-slate-100">
+      <div className="hidden md:block p-4 border-t border-slate-100">
         <div className="p-3 bg-amber-50/70 border border-amber-200/60 rounded-xl">
           <div className="flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />

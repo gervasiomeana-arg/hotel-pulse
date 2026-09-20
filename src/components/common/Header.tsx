@@ -36,12 +36,11 @@ export const Header: React.FC = () => {
   const [hotelDropdownOpen, setHotelDropdownOpen] = useState(false);
 
   // Computed counters for badges
-  const newRequestsCount = requests.filter((r) => r.status === 'nueva').length;
-  const staffActiveTasks = requests.filter(
-    (r) => r.assignedToId === currentStaffId && (r.status === 'asignada' || r.status === 'en_proceso')
-  ).length;
-
   const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
+  const newRequestsCount = requests.filter((r) => r.hotelId === activeHotelId && r.status === 'nueva').length;
+  const staffActiveTasks = requests.filter(
+    (r) => r.hotelId === activeHotelId && r.assignedToId === currentStaffId && (r.status === 'asignada' || r.status === 'en_proceso')
+  ).length;
   const currentStaffMember =
     staff.find((s) => s.id === currentStaffId && s.hotelId === activeHotelId) ||
     staff.find((s) => s.id === currentStaffId) ||
@@ -61,8 +60,8 @@ export const Header: React.FC = () => {
   return (
     <header className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 text-white shadow-md">
       {/* Top Banner / Pulse Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex flex-wrap items-center justify-between gap-2 py-2 md:h-16 md:flex-nowrap md:py-0">
           {/* Logo & Hotel Selector */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2.5">
@@ -141,7 +140,7 @@ export const Header: React.FC = () => {
           </div>
 
           {/* Center/Right: Role Switcher Buttons */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="order-3 flex w-full items-center gap-1 overflow-x-auto pb-0.5 md:order-none md:w-auto md:overflow-visible md:pb-0 sm:gap-2 scrollbar-none" aria-label="Cambiar perfil">
             <span className="text-[11px] font-semibold text-slate-400 hidden xl:inline-block mr-1">
               Perfil:
             </span>
@@ -149,8 +148,9 @@ export const Header: React.FC = () => {
             {/* Role 1: Dueño / Admin */}
             <button
               id="role-btn-admin"
-              onClick={() => setCurrentRole('admin')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              onClick={() => !remoteMode && setCurrentRole('admin')}
+              disabled={remoteMode}
+              className={`shrink-0 flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all ${remoteMode && currentRole !== 'admin' ? 'hidden ' : ''}${
                 currentRole === 'admin'
                   ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
@@ -165,8 +165,9 @@ export const Header: React.FC = () => {
             {/* Role 2: Recepción */}
             <button
               id="role-btn-reception"
-              onClick={() => setCurrentRole('reception')}
-              className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              onClick={() => !remoteMode && setCurrentRole('reception')}
+              disabled={remoteMode}
+              className={`shrink-0 relative flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all ${remoteMode && currentRole !== 'reception' ? 'hidden ' : ''}${
                 currentRole === 'reception'
                   ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
@@ -186,8 +187,9 @@ export const Header: React.FC = () => {
             {/* Role 3: Personal */}
             <button
               id="role-btn-staff"
-              onClick={() => setCurrentRole('staff')}
-              className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              onClick={() => !remoteMode && setCurrentRole('staff')}
+              disabled={remoteMode}
+              className={`shrink-0 relative flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all ${remoteMode && currentRole !== 'staff' ? 'hidden ' : ''}${
                 currentRole === 'staff'
                   ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
@@ -209,8 +211,9 @@ export const Header: React.FC = () => {
             {/* Role 4: Huésped Mobile */}
             <button
               id="role-btn-guest"
-              onClick={() => setCurrentRole('guest')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              onClick={() => !remoteMode && setCurrentRole('guest')}
+              disabled={remoteMode}
+              className={`shrink-0 flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all ${remoteMode ? 'hidden ' : ''}${
                 currentRole === 'guest'
                   ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
                   : 'bg-emerald-600/90 text-white hover:bg-emerald-600'
@@ -226,7 +229,7 @@ export const Header: React.FC = () => {
             <button
               id="start-demo-tour-btn"
               onClick={() => setGuidedTourActive(true)}
-              className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-600/30 to-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all ml-1"
+              className={`${remoteMode ? 'hidden' : 'hidden md:flex'} items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-600/30 to-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all ml-1`}
               title="Recorrido completo: Huésped pide toallas -> Recepción asigna -> Personal entrega -> Admin revisa"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
@@ -237,7 +240,7 @@ export const Header: React.FC = () => {
             <button
               id="reset-demo-data-btn"
               onClick={resetDemoData}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className={`${remoteMode ? 'hidden' : ''} p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors`}
               title="Reiniciar datos de demostración"
             >
               <RotateCcw className="w-3.5 h-3.5" />
