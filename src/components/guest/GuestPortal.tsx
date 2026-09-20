@@ -41,9 +41,8 @@ export const GuestPortal: React.FC = () => {
   const hotelRooms = rooms.filter((r) => r.hotelId === activeHotelId);
   const currentRoom =
     rooms.find((r) => r.number === guestRoomNumber && r.hotelId === activeHotelId) ||
-    rooms.find((r) => r.number === guestRoomNumber) ||
     hotelRooms[0] ||
-    rooms[0] || {
+    {
       id: 'room-default',
       hotelId: activeHotelId,
       number: guestRoomNumber || '304',
@@ -64,7 +63,7 @@ export const GuestPortal: React.FC = () => {
   const guestName = currentRoom?.currentGuest?.name || 'Sofía Martínez';
 
   // Requests for this room
-  const roomRequests = requests.filter((r) => r.roomNumber === guestRoomNumber);
+  const roomRequests = requests.filter((r) => r.hotelId === activeHotelId && r.roomNumber === guestRoomNumber);
 
   // Active dialog modal for fast request
   const [activeModal, setActiveModal] = useState<string | null>(null);
