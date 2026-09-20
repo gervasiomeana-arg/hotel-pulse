@@ -27,7 +27,7 @@ import {
 } from '../data/initialData';
 import { clearPersistedState, loadPersistedState, savePersistedState } from '../services/persistence';
 import { getConfiguredDataSource } from '../services/backendContract';
-import { getAuthorizedHotels, supabaseRepository } from '../services/supabaseRepository';
+import { AuthorizedMembership, getAuthorizedHotels, getAuthorizedMemberships, supabaseRepository } from '../services/supabaseRepository';
 
 export type AdminViewType = 'dashboard' | 'operaciones' | 'habitaciones' | 'mantenimiento' | 'oportunidades' | 'experiencias' | 'configuracion';
 
@@ -133,6 +133,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [opportunities, setOpportunities] = useState<UpsellOpportunity[]>(initialPersistedState?.opportunities ?? INITIAL_UPSELL_OPPORTUNITIES);
   const [experiences, setExperiences] = useState<ExperienceService[]>(initialPersistedState?.experiences ?? INITIAL_EXPERIENCES);
   const [remoteHydratedHotelId, setRemoteHydratedHotelId] = useState<string | null>(null);
+  const [authorizedMemberships, setAuthorizedMemberships] = useState<AuthorizedMembership[]>([]);
   const [attentionItems] = useState<AttentionItem[]>(INITIAL_ATTENTION_ITEMS);
   const [selectedAssetHistory, setSelectedAssetHistory] = useState<AssetMaintenanceHistory | null>(
     ASSET_HISTORIES['asset-ac-407'] || null
@@ -154,11 +155,18 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   useEffect(() => {
     if (!remoteMode) return;
     let active = true;
-    getAuthorizedHotels().then((hotels) => {
+    Promise.all([getAuthorizedHotels(), getAuthorizedMemberships()]).then(([hotels, memberships]) => {
       if (!active) return;
+      setAuthorizedMemberships(memberships);
       if (hotels.length > 0) {
         setAvailableHotels(hotels);
-        if (!hotels.some((hotel) => hotel.id === activeHotel.id)) setActiveHotel(hotels[0]);
+        const selectedHotel = hotels.some((hotel) => hotel.id === activeHotel.id) ? activeHotel : hotels[0];
+        const membership = memberships.find((item) => item.hotelId === selectedHotel.id);
+        setActiveHotel(selectedHotel);
+        if (membership) {
+          setCurrentRole(membership.role);
+          if (membership.staffId) setCurrentStaffId(membership.staffId);
+        }
       } else {
         // Safe fallback to default demo hotels so app is fully operational
         setAvailableHotels(INITIAL_HOTELS);
@@ -175,6 +183,14 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [remoteMode]);
 
   useEffect(() => {
+    if (!remoteMode) return;
+    const membership = authorizedMemberships.find((item) => item.hotelId === activeHotel.id);
+    if (!membership) return;
+    setCurrentRole(membership.role);
+    if (membership.staffId) setCurrentStaffId(membership.staffId);
+  }, [remoteMode, authorizedMemberships, activeHotel.id]);
+
+  useEffect(() => {
     if (!remoteMode || !remoteHotelsLoaded) return;
     const targetHotelId = activeHotel?.id || INITIAL_HOTELS[0].id;
     let active = true;
@@ -189,12 +205,12 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const hotelInitialOpportunities = INITIAL_UPSELL_OPPORTUNITIES.filter((o) => o.hotelId === targetHotelId);
       const hotelInitialExperiences = INITIAL_EXPERIENCES.filter((e) => e.hotelId === targetHotelId);
 
-      setRooms(state.rooms.length > 0 ? state.rooms : (hotelInitialRooms.length > 0 ? hotelInitialRooms : INITIAL_ROOMS));
-      setStaff(state.staff.length > 0 ? state.staff : (hotelInitialStaff.length > 0 ? hotelInitialStaff : INITIAL_STAFF));
-      setRequests(state.requests.length > 0 ? state.requests : (hotelInitialRequests.length > 0 ? hotelInitialRequests : INITIAL_REQUESTS));
-      setIncidents(state.incidents.length > 0 ? state.incidents : (hotelInitialIncidents.length > 0 ? hotelInitialIncidents : INITIAL_MAINTENANCE_INCIDENTS));
-      setOpportunities(state.opportunities.length > 0 ? state.opportunities : (hotelInitialOpportunities.length > 0 ? hotelInitialOpportunities : INITIAL_UPSELL_OPPORTUNITIES));
-      setExperiences(state.experiences.length > 0 ? state.experiences : (hotelInitialExperiences.length > 0 ? hotelInitialExperiences : INITIAL_EXPERIENCES));
+      setRooms(state.rooms.length > 0 ? state.rooms : hotelInitialRooms);
+      setStaff(state.staff.length > 0 ? state.staff : hotelInitialStaff);
+      setRequests(state.requests.length > 0 ? state.requests : hotelInitialRequests);
+      setIncidents(state.incidents.length > 0 ? state.incidents : hotelInitialIncidents);
+      setOpportunities(state.opportunities.length > 0 ? state.opportunities : hotelInitialOpportunities);
+      setExperiences(state.experiences.length > 0 ? state.experiences : hotelInitialExperiences);
       setRemoteHydratedHotelId(targetHotelId);
     }).catch((error) => {
       console.error('No se pudieron cargar los datos del hotel de Supabase:', error);
@@ -309,6 +325,10 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const staffMember = staff.find((s) => s.id === staffId);
     const currentRequest = requests.find((req) => req.id === requestId);
     if (!staffMember || !currentRequest || currentRequest.status !== 'nueva') return;
+    if (staffMember.hotelId !== currentRequest.hotelId) {
+      showToast('Asignación bloqueada', 'El empleado no pertenece al hotel de la solicitud.', 'error');
+      return;
+    }
 
     setRequests((prev) =>
       prev.map((req) => {
