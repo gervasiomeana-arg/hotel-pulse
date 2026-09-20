@@ -125,13 +125,13 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [currentStaffId, setCurrentStaffId] = useState<string>('staff-1');
 
   // State collections
-  const [rooms, setRooms] = useState<Room[]>(initialPersistedState?.rooms ?? INITIAL_ROOMS);
-  const [staff, setStaff] = useState<StaffMember[]>(initialPersistedState?.staff ?? INITIAL_STAFF);
-  const [requests, setRequests] = useState<GuestRequest[]>(initialPersistedState?.requests ?? INITIAL_REQUESTS);
-  const [incidents, setIncidents] = useState<MaintenanceIncident[]>(initialPersistedState?.incidents ?? INITIAL_MAINTENANCE_INCIDENTS);
+  const [rooms, setRooms] = useState<Room[]>(remoteMode ? [] : initialPersistedState?.rooms ?? INITIAL_ROOMS);
+  const [staff, setStaff] = useState<StaffMember[]>(remoteMode ? [] : initialPersistedState?.staff ?? INITIAL_STAFF);
+  const [requests, setRequests] = useState<GuestRequest[]>(remoteMode ? [] : initialPersistedState?.requests ?? INITIAL_REQUESTS);
+  const [incidents, setIncidents] = useState<MaintenanceIncident[]>(remoteMode ? [] : initialPersistedState?.incidents ?? INITIAL_MAINTENANCE_INCIDENTS);
   const [assetHistories] = useState<Record<string, AssetMaintenanceHistory>>(ASSET_HISTORIES);
-  const [opportunities, setOpportunities] = useState<UpsellOpportunity[]>(initialPersistedState?.opportunities ?? INITIAL_UPSELL_OPPORTUNITIES);
-  const [experiences, setExperiences] = useState<ExperienceService[]>(initialPersistedState?.experiences ?? INITIAL_EXPERIENCES);
+  const [opportunities, setOpportunities] = useState<UpsellOpportunity[]>(remoteMode ? [] : initialPersistedState?.opportunities ?? INITIAL_UPSELL_OPPORTUNITIES);
+  const [experiences, setExperiences] = useState<ExperienceService[]>(remoteMode ? [] : initialPersistedState?.experiences ?? INITIAL_EXPERIENCES);
   const [remoteHydratedHotelId, setRemoteHydratedHotelId] = useState<string | null>(null);
   const [authorizedMemberships, setAuthorizedMemberships] = useState<AuthorizedMembership[]>([]);
   const [attentionItems] = useState<AttentionItem[]>(INITIAL_ATTENTION_ITEMS);
@@ -198,19 +198,12 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     supabaseRepository.loadState(targetHotelId).then((state) => {
       if (!active || !state) return;
       
-      const hotelInitialRooms = INITIAL_ROOMS.filter((r) => r.hotelId === targetHotelId);
-      const hotelInitialStaff = INITIAL_STAFF.filter((s) => s.hotelId === targetHotelId);
-      const hotelInitialRequests = INITIAL_REQUESTS.filter((r) => r.hotelId === targetHotelId);
-      const hotelInitialIncidents = INITIAL_MAINTENANCE_INCIDENTS.filter((i) => i.hotelId === targetHotelId);
-      const hotelInitialOpportunities = INITIAL_UPSELL_OPPORTUNITIES.filter((o) => o.hotelId === targetHotelId);
-      const hotelInitialExperiences = INITIAL_EXPERIENCES.filter((e) => e.hotelId === targetHotelId);
-
-      setRooms(state.rooms.length > 0 ? state.rooms : hotelInitialRooms);
-      setStaff(state.staff.length > 0 ? state.staff : hotelInitialStaff);
-      setRequests(state.requests.length > 0 ? state.requests : hotelInitialRequests);
-      setIncidents(state.incidents.length > 0 ? state.incidents : hotelInitialIncidents);
-      setOpportunities(state.opportunities.length > 0 ? state.opportunities : hotelInitialOpportunities);
-      setExperiences(state.experiences.length > 0 ? state.experiences : hotelInitialExperiences);
+      setRooms(state.rooms);
+      setStaff(state.staff);
+      setRequests(state.requests);
+      setIncidents(state.incidents);
+      setOpportunities(state.opportunities);
+      setExperiences(state.experiences);
       setRemoteHydratedHotelId(targetHotelId);
     }).catch((error) => {
       console.error('No se pudieron cargar los datos del hotel de Supabase:', error);
@@ -619,8 +612,11 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const nextTourStep = () => setTourStep((prev) => prev + 1);
   const prevTourStep = () => setTourStep((prev) => Math.max(0, prev - 1));
 
-  if (remoteMode && (!remoteHotelsLoaded || remoteLoadError)) {
-    return <main className="min-h-screen bg-slate-950 grid place-items-center p-6"><div className="max-w-lg rounded-3xl bg-white p-8"><h1 className="text-xl font-bold text-slate-900">{remoteLoadError ? 'No se pudo abrir Hotel Pulse' : 'Cargando hoteles…'}</h1><p className="mt-2 text-slate-600">{remoteLoadError || 'Buscando los hoteles autorizados para tu usuario.'}</p></div></main>;
+  if (remoteMode && (!remoteHotelsLoaded || remoteLoadError || remoteHydratedHotelId !== activeHotel.id)) {
+    const loadingMessage = remoteHotelsLoaded
+      ? 'Cargando la información operativa del hotel seleccionado.'
+      : 'Buscando los hoteles autorizados para tu usuario.';
+    return <main className="min-h-screen bg-slate-950 grid place-items-center p-6"><div className="max-w-lg rounded-3xl bg-white p-8"><h1 className="text-xl font-bold text-slate-900">{remoteLoadError ? 'No se pudo abrir Hotel Pulse' : 'Cargando Hotel Pulse…'}</h1><p className="mt-2 text-slate-600">{remoteLoadError || loadingMessage}</p></div></main>;
   }
 
   return (
