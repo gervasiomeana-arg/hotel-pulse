@@ -57,6 +57,25 @@ Para generar producción:
 npm run build
 ```
 
+## Persistencia con Supabase
+
+El modo local continúa disponible por defecto. Para habilitar persistencia compartida:
+
+1. Crear un proyecto en Supabase.
+2. Ejecutar `supabase/migrations/202609200001_hotel_pulse_persistence.sql`.
+3. Ejecutar `supabase/seed.sql` para crear los hoteles de demostración.
+4. Crear cada usuario en **Authentication → Users** y agregar su UUID a `hotel_members` con el rol correspondiente.
+5. Configurar las variables del archivo `.env.example` y establecer `VITE_DATA_SOURCE="remote"`.
+
+En modo remoto la aplicación exige autenticación. Las políticas RLS derivan los hoteles autorizados de `auth.uid()` y de `hotel_members`; nunca confían en un `hotelId` enviado por el navegador como prueba de acceso.
+
+```sql
+insert into public.hotel_members (hotel_id, user_id, role)
+values ('hotel-grand-pulse', '<UUID_DEL_USUARIO>', 'admin');
+```
+
+Las seis colecciones operativas se guardan en PostgreSQL: habitaciones, personal, solicitudes, mantenimiento, oportunidades y experiencias. Cada registro tiene una clave compuesta por hotel e identificador, por lo que identificadores iguales pueden existir en hoteles diferentes sin mezclar datos.
+
 ## Nota
 
 Los datos actuales son de demostración. No representan información operativa real de un hotel.

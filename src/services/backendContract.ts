@@ -17,7 +17,6 @@ export interface HotelPulseRepository {
 export const getConfiguredDataSource = (): HotelPulseDataSource =>
   import.meta.env.VITE_DATA_SOURCE === 'remote' ? 'remote' : 'local';
 
-export const getApiBaseUrl = (): string => import.meta.env.VITE_API_BASE_URL?.trim() || '';
-
 export const remoteBackendConfigured = (): boolean =>
-  getConfiguredDataSource() === 'remote' && getApiBaseUrl().length > 0;
+  getConfiguredDataSource() === 'remote' &&
+  Boolean(import.meta.env.VITE_SUPABASE_URL?.trim() && import.meta.env.VITE_SUPABASE_ANON_KEY?.trim());
