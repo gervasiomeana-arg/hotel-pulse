@@ -37,6 +37,9 @@ export const ReceptionView: React.FC = () => {
     (r) => r.status === 'asignada' || r.status === 'en_proceso'
   );
   const resolvedToday = hotelRequests.filter((r) => r.status === 'resuelta');
+  const getActiveTaskCount = (staffId: string) => hotelRequests.filter(
+    (request) => request.assignedToId === staffId && (request.status === 'asignada' || request.status === 'en_proceso')
+  ).length;
 
   const getElapsedTimeText = (createdAt: string) => {
     const diffMs = Date.now() - new Date(createdAt).getTime();
@@ -76,7 +79,7 @@ export const ReceptionView: React.FC = () => {
           <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-center">
             <span className="text-[10px] uppercase font-bold text-slate-400 block">Personal Disponible</span>
             <span className="font-bold text-slate-900">
-              {hotelStaff.filter((s) => s.status === 'disponible').length} de {hotelStaff.length}
+              {hotelStaff.filter((member) => getActiveTaskCount(member.id) === 0).length} de {hotelStaff.length}
             </span>
           </div>
         </div>
@@ -264,12 +267,12 @@ export const ReceptionView: React.FC = () => {
               </div>
               <span
                 className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                  member.status === 'disponible'
+                  getActiveTaskCount(member.id) === 0
                     ? 'bg-emerald-100 text-emerald-800'
                     : 'bg-amber-100 text-amber-800'
                 }`}
               >
-                {member.activeTasks} tareas
+                {getActiveTaskCount(member.id)} tareas
               </span>
             </div>
           ))}
