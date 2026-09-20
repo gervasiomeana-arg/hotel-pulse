@@ -20,7 +20,10 @@ const tables: Record<CollectionKey, string> = {
   experiences: 'experience_services',
 };
 
-const snapshots = new Map<string, Partial<Record<CollectionKey, string>>>();
+type CollectionSnapshot = Map<string, string>;
+
+const snapshots = new Map<string, Partial<Record<CollectionKey, CollectionSnapshot>>>();
+const saveQueues = new Map<string, Promise<void>>();
 
 const requireClient = () => {
   if (!supabase) throw new Error('Supabase no está configurado. Revisá VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY.');
@@ -51,20 +54,26 @@ const loadCollection = async <T>(table: string, hotelId: string): Promise<T[]> =
   return (data ?? []).map((row) => row.payload as T);
 };
 
-const saveCollection = async (table: string, hotelId: string, values: Array<{ id: string }>) => {
+const saveCollection = async (
+  table: string,
+  hotelId: string,
+  values: Array<{ id: string }>,
+  previous: CollectionSnapshot
+): Promise<CollectionSnapshot> => {
   const client = requireClient();
-  const ids = values.map((value) => value.id);
-  if (values.length) {
-    const { error } = await client.from(table).upsert(values.map((value) => ({ id: value.id, hotel_id: hotelId, payload: value })), { onConflict: 'hotel_id,id' });
+  const next = new Map(values.map((value) => [value.id, JSON.stringify(value)]));
+  const changedValues = values.filter((value) => previous.get(value.id) !== next.get(value.id));
+  const staleIds = [...previous.keys()].filter((id) => !next.has(id));
+
+  if (changedValues.length) {
+    const { error } = await client.from(table).upsert(changedValues.map((value) => ({ id: value.id, hotel_id: hotelId, payload: value })), { onConflict: 'hotel_id,id' });
     if (error) throw error;
   }
-  const { data: existing, error: listError } = await client.from(table).select('id').eq('hotel_id', hotelId);
-  if (listError) throw listError;
-  const staleIds = (existing ?? []).map((row) => row.id as string).filter((id) => !ids.includes(id));
   if (staleIds.length) {
     const { error } = await client.from(table).delete().eq('hotel_id', hotelId).in('id', staleIds);
     if (error) throw error;
   }
+  return next;
 };
 
 export const supabaseRepository: HotelPulseRepository = {
@@ -75,18 +84,32 @@ export const supabaseRepository: HotelPulseRepository = {
       loadCollection<PersistedHotelPulseState['opportunities'][number]>(tables.opportunities, hotelId), loadCollection<PersistedHotelPulseState['experiences'][number]>(tables.experiences, hotelId),
     ]);
     const state = { version: 1 as const, rooms, staff, requests, incidents, opportunities, experiences };
-    snapshots.set(hotelId, Object.fromEntries((Object.keys(tables) as CollectionKey[]).map((key) => [key, JSON.stringify(state[key])])));
+    snapshots.set(hotelId, Object.fromEntries(
+      (Object.keys(tables) as CollectionKey[]).map((key) => [
+        key,
+        new Map(state[key].map((item) => [item.id, JSON.stringify(item)])),
+      ])
+    ));
     return state;
   },
   async saveState(hotelId, state) {
-    const previous = snapshots.get(hotelId) ?? {};
-    await Promise.all((Object.keys(tables) as CollectionKey[]).map(async (key) => {
-      const values = state[key].filter((item) => item.hotelId === hotelId);
-      const serialized = JSON.stringify(values);
-      if (previous[key] === serialized) return;
-      await saveCollection(tables[key], hotelId, values);
-      previous[key] = serialized;
-    }));
-    snapshots.set(hotelId, previous);
+    const queuedSave = (saveQueues.get(hotelId) ?? Promise.resolve())
+      .catch(() => undefined)
+      .then(async () => {
+        const previous = snapshots.get(hotelId) ?? {};
+        const nextSnapshots = { ...previous };
+        await Promise.all((Object.keys(tables) as CollectionKey[]).map(async (key) => {
+          const values = state[key].filter((item) => item.hotelId === hotelId);
+          nextSnapshots[key] = await saveCollection(tables[key], hotelId, values, previous[key] ?? new Map());
+        }));
+        snapshots.set(hotelId, nextSnapshots);
+      });
+
+    saveQueues.set(hotelId, queuedSave);
+    try {
+      await queuedSave;
+    } finally {
+      if (saveQueues.get(hotelId) === queuedSave) saveQueues.delete(hotelId);
+    }
   },
 };
