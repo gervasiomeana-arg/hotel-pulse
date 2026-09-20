@@ -27,12 +27,27 @@ const WorkspaceLoading = () => (
 );
 
 const MainLayout: React.FC = () => {
-  const { currentRole, adminView } = useHotelPulse();
+  const { currentRole, adminView, remoteSaveError, retryRemoteSave } = useHotelPulse();
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
       {/* Top Universal App Header */}
       <Header />
+
+      {remoteSaveError && (
+        <div className="border-b border-rose-300 bg-rose-50 px-4 py-3 text-rose-900" role="alert">
+          <div className="mx-auto flex max-w-7xl flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <span className="font-medium">{remoteSaveError}</span>
+            <button
+              type="button"
+              onClick={retryRemoteSave}
+              className="w-fit rounded-lg bg-rose-900 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-rose-800"
+            >
+              Reintentar guardado
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Role-Based Workspace */}
       <div className="flex-1 flex flex-col">
