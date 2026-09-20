@@ -14,7 +14,13 @@ export const RemoteAuthGate: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     if (!remote || !supabase) return;
-    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setChecking(false); });
+    supabase.auth.getSession()
+      .then(({ data, error: sessionError }) => {
+        if (sessionError) setError('No pudimos validar la sesión. Intentá nuevamente.');
+        setSession(data.session);
+      })
+      .catch(() => setError('No pudimos conectar con el servicio de acceso.'))
+      .finally(() => setChecking(false));
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
     return () => data.subscription.unsubscribe();
   }, [remote]);
@@ -26,8 +32,14 @@ export const RemoteAuthGate: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const signIn = async (event: FormEvent) => {
     event.preventDefault(); setBusy(true); setError('');
-    const { error: signInError } = await supabase!.auth.signInWithPassword({ email, password });
-    setBusy(false); if (signInError) setError(signInError.message);
+    try {
+      const { error: signInError } = await supabase!.auth.signInWithPassword({ email: email.trim(), password });
+      if (signInError) setError('El correo o la contraseña no son correctos.');
+    } catch {
+      setError('No pudimos conectar con el servicio de acceso. Intentá nuevamente.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return <main className="min-h-screen bg-slate-950 grid place-items-center p-6">
@@ -36,10 +48,10 @@ export const RemoteAuthGate: React.FC<{ children: React.ReactNode }> = ({ childr
       <h1 className="mt-3 text-2xl font-extrabold text-slate-900">Acceso del equipo</h1>
       <p className="mt-2 text-sm text-slate-500">Ingresá con el usuario autorizado para tu hotel.</p>
       <label className="mt-6 block text-sm font-semibold text-slate-700">Email</label>
-      <input className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+      <input className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
       <label className="mt-4 block text-sm font-semibold text-slate-700">Contraseña</label>
-      <input className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      <input className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+      {error && <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{error}</p>}
       <button disabled={busy} className="mt-6 w-full rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:opacity-60">{busy ? 'Ingresando…' : 'Ingresar'}</button>
     </form>
   </main>;

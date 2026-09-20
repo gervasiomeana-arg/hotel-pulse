@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useHotelPulse } from '../../context/HotelPulseContext';
-import { UserRole } from '../../types';
 import { getConfiguredDataSource } from '../../services/backendContract';
+import { supabase } from '../../services/supabaseClient';
 import {
   Building2,
   ChevronDown,
@@ -12,7 +12,7 @@ import {
   Smartphone,
   RotateCcw,
   Sparkles,
-  ExternalLink,
+  LogOut,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -24,7 +24,6 @@ export const Header: React.FC = () => {
     setActiveHotel,
     availableHotels,
     guestRoomNumber,
-    setGuestRoomNumber,
     requests,
     staff,
     rooms,
@@ -34,6 +33,14 @@ export const Header: React.FC = () => {
   } = useHotelPulse();
 
   const [hotelDropdownOpen, setHotelDropdownOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    if (!supabase || signingOut) return;
+    setSigningOut(true);
+    await supabase.auth.signOut();
+    setSigningOut(false);
+  };
 
   // Computed counters for badges
   const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
@@ -245,6 +252,19 @@ export const Header: React.FC = () => {
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
+
+            {remoteMode && (
+              <button
+                id="sign-out-btn"
+                onClick={handleSignOut}
+                disabled={signingOut}
+                className="shrink-0 flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-2 text-xs font-semibold text-slate-200 transition-colors hover:border-slate-600 hover:bg-slate-700 disabled:cursor-wait disabled:opacity-60"
+                title="Cerrar la sesión actual"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="hidden xl:inline">{signingOut ? 'Saliendo…' : 'Cerrar sesión'}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
