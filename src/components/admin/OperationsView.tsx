@@ -49,6 +49,7 @@ export const OperationsView: React.FC = () => {
   const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
   const hotelRooms = rooms.filter((room) => room.hotelId === activeHotelId);
   const hotelRequests = requests.filter((req) => req.hotelId === activeHotelId);
+  const hotelStaff = staff.filter((member) => member.hotelId === activeHotelId);
 
   // Filter logic
   const filteredRequests = hotelRequests.filter((req) => {
@@ -405,14 +406,14 @@ export const OperationsView: React.FC = () => {
                       {/* Acción Rápida */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          {req.status === 'nueva' && (
+                          {req.status === 'nueva' && hotelStaff.length > 0 && (
                             <button
-                              id={`quick-assign-staff-1-${req.id}`}
-                              onClick={() => assignRequest(req.id, 'staff-1')}
+                              id={`quick-assign-${hotelStaff[0].id}-${req.id}`}
+                              onClick={() => assignRequest(req.id, hotelStaff.find((member) => member.sector === req.sector)?.id || hotelStaff[0].id)}
                               className="px-2 py-1 rounded bg-slate-900 text-white hover:bg-slate-800 text-[11px] font-bold transition-all"
-                              title="Asignar a Carlos Méndez (Limpieza)"
+                              title="Asignar al personal compatible disponible"
                             >
-                              Asignar a Carlos
+                              Asignación rápida
                             </button>
                           )}
                           {req.status === 'asignada' && (
@@ -456,7 +457,12 @@ export const OperationsView: React.FC = () => {
               Selecciona el empleado de guardia disponible para ejecutar la tarea.
             </p>
             <div className="space-y-2">
-              {staff.map((member) => (
+              {hotelStaff
+                .filter((member) => {
+                  const request = hotelRequests.find((item) => item.id === assigningReqId);
+                  return !request || member.sector === request.sector || member.sector === 'front_desk';
+                })
+                .map((member) => (
                 <button
                   key={member.id}
                   id={`assign-member-${member.id}`}

@@ -23,16 +23,20 @@ export const ReceptionView: React.FC = () => {
     staffAcceptTask,
     staffCompleteTask,
     rooms,
+    activeHotel,
   } = useHotelPulse();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSector, setSelectedSector] = useState<string>('all');
 
-  const newRequests = requests.filter((r) => r.status === 'nueva');
-  const inProgressRequests = requests.filter(
+  const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
+  const hotelRequests = requests.filter((r) => r.hotelId === activeHotelId);
+  const hotelStaff = staff.filter((member) => member.hotelId === activeHotelId);
+  const newRequests = hotelRequests.filter((r) => r.status === 'nueva');
+  const inProgressRequests = hotelRequests.filter(
     (r) => r.status === 'asignada' || r.status === 'en_proceso'
   );
-  const resolvedToday = requests.filter((r) => r.status === 'resuelta');
+  const resolvedToday = hotelRequests.filter((r) => r.status === 'resuelta');
 
   const getElapsedTimeText = (createdAt: string) => {
     const diffMs = Date.now() - new Date(createdAt).getTime();
@@ -72,7 +76,7 @@ export const ReceptionView: React.FC = () => {
           <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-center">
             <span className="text-[10px] uppercase font-bold text-slate-400 block">Personal Disponible</span>
             <span className="font-bold text-slate-900">
-              {staff.filter((s) => s.status === 'disponible').length} de {staff.length}
+              {hotelStaff.filter((s) => s.status === 'disponible').length} de {hotelStaff.length}
             </span>
           </div>
         </div>
@@ -146,7 +150,7 @@ export const ReceptionView: React.FC = () => {
                     Asignar personal inmediatamente:
                   </span>
                   <div className="grid grid-cols-2 gap-2">
-                    {staff.slice(0, 4).map((member) => (
+                    {hotelStaff.filter((member) => member.sector === req.sector || member.sector === 'front_desk').slice(0, 4).map((member) => (
                       <button
                         key={member.id}
                         id={`reception-assign-${req.id}-to-${member.id}`}
@@ -221,11 +225,13 @@ export const ReceptionView: React.FC = () => {
 
                   {/* Fast completion trigger if receptionist confirms over radio */}
                   <button
-                    onClick={() => staffCompleteTask(req.id, 'Confirmado por recepción vía radio')}
-                    className="px-2 py-1 text-[10px] font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-500"
-                    title="Cerrar como resuelto si el empleado confirmó por intercomunicador"
+                    onClick={() => req.status === 'asignada'
+                      ? staffAcceptTask(req.id)
+                      : staffCompleteTask(req.id, 'Confirmado por recepción vía radio')}
+                    className={`px-2 py-1 text-[10px] font-bold text-white rounded-lg ${req.status === 'asignada' ? 'bg-amber-600 hover:bg-amber-500' : 'bg-emerald-600 hover:bg-emerald-500'}`}
+                    title={req.status === 'asignada' ? 'Confirmar que el personal tomó la tarea' : 'Cerrar como resuelto si el empleado confirmó por intercomunicador'}
                   >
-                    Confirmar Entrega
+                    {req.status === 'asignada' ? 'Confirmar recepción' : 'Confirmar entrega'}
                   </button>
                 </div>
               </div>
@@ -237,10 +243,10 @@ export const ReceptionView: React.FC = () => {
       {/* SECTION 3: STAFF ROSTER & AVAILABILITY */}
       <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm">
         <h3 className="text-sm font-bold text-slate-900 font-['Outfit'] mb-3">
-          Personal Operativo de Guardia ({staff.length})
+          Personal Operativo de Guardia ({hotelStaff.length})
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {staff.map((member) => (
+          {hotelStaff.map((member) => (
             <div
               key={member.id}
               className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between text-xs"

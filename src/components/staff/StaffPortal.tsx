@@ -49,12 +49,13 @@ export const StaffPortal: React.FC = () => {
   // Filter tasks for this staff member
   const myTasks = requests.filter(
     (r) =>
+      r.hotelId === activeHotelId &&
       r.assignedToId === currentStaff.id &&
       (r.status === 'asignada' || r.status === 'en_proceso' || r.status === 'resuelta')
   );
 
   const sectorTasks = requests.filter(
-    (r) => r.sector === currentStaff.sector && r.status !== 'resuelta'
+    (r) => r.hotelId === activeHotelId && r.sector === currentStaff.sector && r.status !== 'resuelta'
   );
 
   const activeTasksList = filterView === 'my_tasks' ? myTasks : sectorTasks;
@@ -103,7 +104,7 @@ export const StaffPortal: React.FC = () => {
               onChange={(e) => setCurrentStaffId(e.target.value)}
               className="px-2.5 py-1 text-xs bg-slate-800 text-amber-300 font-semibold rounded-xl border border-slate-700"
             >
-              {staff.map((member) => (
+              {hotelStaff.map((member) => (
                 <option key={member.id} value={member.id}>
                   {member?.name || 'Sin nombre'} ({member?.sector || 'general'})
                 </option>
