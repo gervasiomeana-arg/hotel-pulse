@@ -84,8 +84,8 @@ export const Sidebar: React.FC = () => {
               <Building className="w-4 h-4 text-amber-700" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-xs font-bold text-slate-900 truncate">{activeHotel.name}</h3>
-              <p className="text-[11px] text-slate-500 truncate">{activeHotel.city}</p>
+              <h3 className="text-xs font-bold text-slate-900 truncate">{activeHotel?.name || 'Hotel Pulse'}</h3>
+              <p className="text-[11px] text-slate-500 truncate">{activeHotel?.city || 'SaaS Multi-Hotel'}</p>
             </div>
           </div>
         </div>

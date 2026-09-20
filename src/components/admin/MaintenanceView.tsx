@@ -30,8 +30,9 @@ export const MaintenanceView: React.FC = () => {
     setSelectedAssetHistory,
   } = useHotelPulse();
 
-  const hotelRooms = rooms.filter((room) => room.hotelId === activeHotel.id);
-  const hotelIncidents = incidents.filter((incident) => incident.hotelId === activeHotel.id);
+  const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
+  const hotelRooms = rooms.filter((room) => room.hotelId === activeHotelId);
+  const hotelIncidents = incidents.filter((incident) => incident.hotelId === activeHotelId);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [roomNumber, setRoomNumber] = useState('407');

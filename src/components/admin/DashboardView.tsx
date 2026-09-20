@@ -33,14 +33,15 @@ export const DashboardView: React.FC = () => {
   } = useHotelPulse();
 
   // Computed metrics scoped to the active hotel
-  const hotelRooms = rooms.filter((r) => r.hotelId === activeHotel.id);
-  const hotelRequests = requests.filter((r) => r.hotelId === activeHotel.id);
-  const hotelIncidents = incidents.filter((i) => i.hotelId === activeHotel.id);
-  const hotelOpportunities = opportunities.filter((o) => o.hotelId === activeHotel.id);
+  const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
+  const hotelRooms = rooms.filter((r) => r.hotelId === activeHotelId);
+  const hotelRequests = requests.filter((r) => r.hotelId === activeHotelId);
+  const hotelIncidents = incidents.filter((i) => i.hotelId === activeHotelId);
+  const hotelOpportunities = opportunities.filter((o) => o.hotelId === activeHotelId);
   const occupiedRooms = hotelRooms.filter((r) => r.status === 'ocupada').length;
   const occupancyRate = hotelRooms.length > 0 ? Math.round((occupiedRooms / hotelRooms.length) * 100) : 0;
   const totalGuests = hotelRooms.reduce(
-    (acc, r) => (r.status === 'ocupada' && r.currentGuest ? acc + r.currentGuest.guestsCount : acc),
+    (acc, r) => (r.status === 'ocupada' && r.currentGuest ? acc + (r.currentGuest.guestsCount || 1) : acc),
     0
   );
 
@@ -144,7 +145,7 @@ export const DashboardView: React.FC = () => {
             <span className="text-xs text-slate-500">• Sincronizado en tiempo real</span>
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900 mt-1 font-['Outfit']">
-            Centro de Mando &mdash; {activeHotel.name}
+            Centro de Mando &mdash; {activeHotel?.name || 'Hotel Pulse'}
           </h1>
           <p className="text-xs text-slate-600 mt-0.5">
             Supervisión operativa, solicitudes activas, mantenimiento preventivo y desempeño del personal.
@@ -153,7 +154,7 @@ export const DashboardView: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <div className="text-xs font-semibold text-slate-900">{activeHotel.city}</div>
+            <div className="text-xs font-semibold text-slate-900">{activeHotel?.city || 'SaaS Multi-Hotel'}</div>
             <div className="text-[11px] text-slate-500">{hotelStaff.length} miembros cargados • {busyStaff} en tarea</div>
           </div>
           <button

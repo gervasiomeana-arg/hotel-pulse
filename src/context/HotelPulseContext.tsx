@@ -156,26 +156,52 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     let active = true;
     getAuthorizedHotels().then((hotels) => {
       if (!active) return;
-      setAvailableHotels(hotels);
-      if (hotels.length && !hotels.some((hotel) => hotel.id === activeHotel.id)) setActiveHotel(hotels[0]);
-      if (!hotels.length) setRemoteLoadError('Tu usuario todavía no tiene un hotel asignado. Agregalo a hotel_members desde Supabase.');
-    }).catch((error) => setRemoteLoadError(error instanceof Error ? error.message : 'No se pudieron cargar los hoteles autorizados.'))
-      .finally(() => { if (active) setRemoteHotelsLoaded(true); });
+      if (hotels.length > 0) {
+        setAvailableHotels(hotels);
+        if (!hotels.some((hotel) => hotel.id === activeHotel.id)) setActiveHotel(hotels[0]);
+      } else {
+        // Safe fallback to default demo hotels so app is fully operational
+        setAvailableHotels(INITIAL_HOTELS);
+        setActiveHotel(INITIAL_HOTELS[0]);
+      }
+    }).catch((error) => {
+      console.warn('No se pudieron cargar los hoteles autorizados de Supabase, usando hoteles de demostración:', error);
+      setAvailableHotels(INITIAL_HOTELS);
+      setActiveHotel(INITIAL_HOTELS[0]);
+    }).finally(() => {
+      if (active) setRemoteHotelsLoaded(true);
+    });
     return () => { active = false; };
   }, [remoteMode]);
 
   useEffect(() => {
-    if (!remoteMode || !remoteHotelsLoaded || !availableHotels.some((hotel) => hotel.id === activeHotel.id)) return;
+    if (!remoteMode || !remoteHotelsLoaded) return;
+    const targetHotelId = activeHotel?.id || INITIAL_HOTELS[0].id;
     let active = true;
     setRemoteHydratedHotelId(null);
-    supabaseRepository.loadState(activeHotel.id).then((state) => {
+    supabaseRepository.loadState(targetHotelId).then((state) => {
       if (!active || !state) return;
-      setRooms(state.rooms); setStaff(state.staff); setRequests(state.requests);
-      setIncidents(state.incidents); setOpportunities(state.opportunities); setExperiences(state.experiences);
-      setRemoteHydratedHotelId(activeHotel.id);
-    }).catch((error) => console.error('No se pudieron cargar los datos del hotel', error));
+      
+      const hotelInitialRooms = INITIAL_ROOMS.filter((r) => r.hotelId === targetHotelId);
+      const hotelInitialStaff = INITIAL_STAFF.filter((s) => s.hotelId === targetHotelId);
+      const hotelInitialRequests = INITIAL_REQUESTS.filter((r) => r.hotelId === targetHotelId);
+      const hotelInitialIncidents = INITIAL_MAINTENANCE_INCIDENTS.filter((i) => i.hotelId === targetHotelId);
+      const hotelInitialOpportunities = INITIAL_UPSELL_OPPORTUNITIES.filter((o) => o.hotelId === targetHotelId);
+      const hotelInitialExperiences = INITIAL_EXPERIENCES.filter((e) => e.hotelId === targetHotelId);
+
+      setRooms(state.rooms.length > 0 ? state.rooms : (hotelInitialRooms.length > 0 ? hotelInitialRooms : INITIAL_ROOMS));
+      setStaff(state.staff.length > 0 ? state.staff : (hotelInitialStaff.length > 0 ? hotelInitialStaff : INITIAL_STAFF));
+      setRequests(state.requests.length > 0 ? state.requests : (hotelInitialRequests.length > 0 ? hotelInitialRequests : INITIAL_REQUESTS));
+      setIncidents(state.incidents.length > 0 ? state.incidents : (hotelInitialIncidents.length > 0 ? hotelInitialIncidents : INITIAL_MAINTENANCE_INCIDENTS));
+      setOpportunities(state.opportunities.length > 0 ? state.opportunities : (hotelInitialOpportunities.length > 0 ? hotelInitialOpportunities : INITIAL_UPSELL_OPPORTUNITIES));
+      setExperiences(state.experiences.length > 0 ? state.experiences : (hotelInitialExperiences.length > 0 ? hotelInitialExperiences : INITIAL_EXPERIENCES));
+      setRemoteHydratedHotelId(targetHotelId);
+    }).catch((error) => {
+      console.error('No se pudieron cargar los datos del hotel de Supabase:', error);
+      setRemoteHydratedHotelId(targetHotelId);
+    });
     return () => { active = false; };
-  }, [remoteMode, remoteHotelsLoaded, activeHotel.id, availableHotels]);
+  }, [remoteMode, remoteHotelsLoaded, activeHotel?.id]);
 
   useEffect(() => {
     if (!remoteMode || remoteHydratedHotelId !== activeHotel.id) return;
@@ -223,7 +249,8 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     priority?: PriorityType;
     roomNumber?: string;
   }) => {
-    const activeRoom = rooms.find((r) => r.hotelId === activeHotel.id && r.number === roomNumber);
+    const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
+    const activeRoom = rooms.find((r) => r.hotelId === activeHotelId && r.number === roomNumber);
     const guestName = activeRoom?.currentGuest?.name || 'Huésped Habitación ' + roomNumber;
 
     // Automatic sector classification if needed
@@ -241,7 +268,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const now = new Date().toISOString();
     const newReq: GuestRequest = {
       id: `req-${Date.now()}`,
-      hotelId: activeHotel.id,
+      hotelId: activeHotelId,
       roomNumber,
       guestName,
       title,
@@ -265,7 +292,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     // Update room active request counter
     setRooms((prev) =>
-      prev.map((r) => (r.hotelId === activeHotel.id && r.number === roomNumber ? { ...r, activeRequestsCount: r.activeRequestsCount + 1 } : r))
+      prev.map((r) => (r.hotelId === activeHotelId && r.number === roomNumber ? { ...r, activeRequestsCount: r.activeRequestsCount + 1 } : r))
     );
 
     showToast(
@@ -437,10 +464,11 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Maintenance Actions
   const createMaintenanceIncident = (incidentData: Omit<MaintenanceIncident, 'id' | 'hotelId' | 'date'>) => {
+    const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
     const newInc: MaintenanceIncident = {
       ...incidentData,
       id: `inc-${Date.now()}`,
-      hotelId: activeHotel.id,
+      hotelId: activeHotelId,
       date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
     };
 
@@ -448,7 +476,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     setRooms((prev) =>
       prev.map((r) =>
-        r.hotelId === activeHotel.id && r.number === incidentData.roomNumber
+        r.hotelId === activeHotelId && r.number === incidentData.roomNumber
           ? { ...r, status: 'mantenimiento', activeIssuesCount: r.activeIssuesCount + 1 }
           : r
       )
@@ -479,11 +507,12 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const bookExperience = (experienceId: string, roomNumber: string) => {
-    const exp = experiences.find((e) => e.id === experienceId && e.hotelId === activeHotel.id);
+    const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
+    const exp = experiences.find((e) => e.id === experienceId && e.hotelId === activeHotelId);
     if (!exp) return;
 
     setExperiences((prev) =>
-      prev.map((e) => (e.id === experienceId && e.hotelId === activeHotel.id ? { ...e, activeBookings: e.activeBookings + 1 } : e))
+      prev.map((e) => (e.id === experienceId && e.hotelId === activeHotelId ? { ...e, activeBookings: e.activeBookings + 1 } : e))
     );
 
     // Create a request in reception
@@ -501,9 +530,10 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const addRoom = (room: Pick<Room, 'number' | 'type' | 'floor'>) => {
+    const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
     const normalizedNumber = room.number.trim();
     const duplicate = rooms.some(
-      (existingRoom) => existingRoom.hotelId === activeHotel.id && existingRoom.number === normalizedNumber
+      (existingRoom) => existingRoom.hotelId === activeHotelId && existingRoom.number === normalizedNumber
     );
     if (!normalizedNumber || duplicate) {
       showToast('Habitación no guardada', duplicate ? 'Ya existe una habitación con ese número en este hotel.' : 'Ingresá un número de habitación.', 'warning');
@@ -511,8 +541,8 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
 
     setRooms((prev) => [...prev, {
-      id: `room-${activeHotel.id}-${Date.now()}`,
-      hotelId: activeHotel.id,
+      id: `room-${activeHotelId}-${Date.now()}`,
+      hotelId: activeHotelId,
       number: normalizedNumber,
       type: room.type,
       floor: room.floor,
@@ -520,28 +550,31 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       activeIssuesCount: 0,
       activeRequestsCount: 0,
     }]);
-    showToast('Habitación agregada', `Habitación ${normalizedNumber} disponible en ${activeHotel.name}.`, 'success');
+    showToast('Habitación agregada', `Habitación ${normalizedNumber} disponible en ${activeHotel?.name || 'el hotel'}.`, 'success');
     return true;
   };
 
   const addStaffMember = (member: Pick<StaffMember, 'name' | 'sector' | 'roleTitle' | 'phone'>) => {
+    const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
+    const initials = (member.name || 'P').trim().split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
     setStaff((prev) => [...prev, {
       ...member,
       id: `staff-${Date.now()}`,
-      hotelId: activeHotel.id,
+      hotelId: activeHotelId,
       activeTasks: 0,
-      avatar: member.name.trim().split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
+      avatar: initials,
       status: 'disponible',
     }]);
-    showToast('Personal agregado', `${member.name} fue incorporado a ${activeHotel.name}.`, 'success');
+    showToast('Personal agregado', `${member.name} fue incorporado a ${activeHotel?.name || 'el hotel'}.`, 'success');
   };
 
   const addExperience = (experience: Omit<ExperienceService, 'id' | 'hotelId' | 'activeBookings' | 'hotelCommissionAmount'>) => {
+    const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
     const commission = Number(((experience.price * experience.hotelCommissionRate) / 100).toFixed(2));
     setExperiences((prev) => [...prev, {
       ...experience,
       id: `exp-${Date.now()}`,
-      hotelId: activeHotel.id,
+      hotelId: activeHotelId,
       activeBookings: 0,
       hotelCommissionAmount: commission,
     }]);

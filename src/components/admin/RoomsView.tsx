@@ -129,18 +129,24 @@ export const RoomsView: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div className="font-bold text-slate-900 flex items-center gap-1">
                         <User className="w-3 h-3 text-slate-400" />
-                        <span>{room.currentGuest.name}</span>
+                        <span>
+                          {typeof room.currentGuest === 'object'
+                            ? room.currentGuest?.name || 'Huésped Registrado'
+                            : String(room.currentGuest || 'Huésped')}
+                        </span>
                       </div>
-                      {room.currentGuest.vip && (
+                      {typeof room.currentGuest === 'object' && room.currentGuest?.vip && (
                         <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 bg-amber-400 text-slate-950 rounded">
                           VIP
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-slate-500 flex items-center justify-between pt-0.5">
-                      <span>Checkout: {room.currentGuest.checkOut}</span>
-                      <span>{room.currentGuest.guestsCount} pers.</span>
-                    </div>
+                    {typeof room.currentGuest === 'object' && (
+                      <div className="text-[11px] text-slate-500 flex items-center justify-between pt-0.5">
+                        <span>Checkout: {room.currentGuest?.checkOut || 'A confirmar'}</span>
+                        <span>{room.currentGuest?.guestsCount || 1} pers.</span>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="mt-3.5 p-2.5 bg-slate-50/50 border border-dashed border-slate-200 rounded-xl text-xs text-slate-400 text-center">

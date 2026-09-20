@@ -20,7 +20,8 @@ export const OpportunitiesView: React.FC = () => {
   const { activeHotel, opportunities, sendUpsellProposal } = useHotelPulse();
   const [filterType, setFilterType] = useState<string>('all');
 
-  const hotelOpportunities = opportunities.filter((o) => o.hotelId === activeHotel.id);
+  const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
+  const hotelOpportunities = opportunities.filter((o) => o.hotelId === activeHotelId);
 
   const filtered = hotelOpportunities.filter((o) => {
     if (filterType !== 'all' && o.type !== filterType) return false;

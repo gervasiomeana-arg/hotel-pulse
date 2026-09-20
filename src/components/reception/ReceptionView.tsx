@@ -154,15 +154,15 @@ export const ReceptionView: React.FC = () => {
                         className="p-2 text-left bg-slate-50 hover:bg-amber-50 hover:border-amber-300 border border-slate-200 rounded-xl text-xs transition-all flex items-center gap-2 group"
                       >
                         <img
-                          src={member.avatar}
-                          alt={member.name}
+                          src={member?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
+                          alt={member?.name || 'Personal'}
                           className="w-6 h-6 rounded-full object-cover"
                         />
                         <div className="min-w-0">
                           <div className="font-bold text-slate-900 truncate text-[11px] group-hover:text-amber-950">
-                            {member.name.split(' ')[0]}
+                            {member?.name ? member.name.split(' ')[0] : 'Personal'}
                           </div>
-                          <div className="text-[9px] text-slate-500 truncate">{member.sector}</div>
+                          <div className="text-[9px] text-slate-500 truncate">{member?.sector || 'general'}</div>
                         </div>
                       </button>
                     ))}
@@ -247,13 +247,13 @@ export const ReceptionView: React.FC = () => {
             >
               <div className="flex items-center gap-2.5">
                 <img
-                  src={member.avatar}
-                  alt={member.name}
+                  src={member?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
+                  alt={member?.name || 'Personal'}
                   className="w-9 h-9 rounded-full object-cover border border-slate-300"
                 />
                 <div>
-                  <div className="font-bold text-slate-900">{member.name}</div>
-                  <div className="text-[10px] text-slate-500">{member.roleTitle}</div>
+                  <div className="font-bold text-slate-900">{member?.name || 'Personal'}</div>
+                  <div className="text-[10px] text-slate-500">{member?.roleTitle || 'Operativo'}</div>
                 </div>
               </div>
               <span

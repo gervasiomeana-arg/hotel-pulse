@@ -41,7 +41,22 @@ export const Header: React.FC = () => {
     (r) => r.assignedToId === currentStaffId && (r.status === 'asignada' || r.status === 'en_proceso')
   ).length;
 
-  const currentStaffMember = staff.find((s) => s.id === currentStaffId) || staff[0];
+  const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
+  const currentStaffMember =
+    staff.find((s) => s.id === currentStaffId && s.hotelId === activeHotelId) ||
+    staff.find((s) => s.id === currentStaffId) ||
+    staff.find((s) => s.hotelId === activeHotelId) ||
+    staff[0] || {
+      id: 'staff-fallback',
+      hotelId: activeHotelId,
+      name: 'Personal de Guardia',
+      sector: 'housekeeping' as const,
+      roleTitle: 'Operativo de Guardia',
+      phone: '',
+      activeTasks: 0,
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+      status: 'disponible' as const,
+    };
 
   return (
     <header className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 text-white shadow-md">
@@ -76,7 +91,7 @@ export const Header: React.FC = () => {
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-xs text-slate-200 border border-slate-700/60 transition-colors"
               >
                 <Building2 className="w-3.5 h-3.5 text-amber-400" />
-                <span className="font-medium truncate max-w-[150px]">{activeHotel.name}</span>
+                <span className="font-medium truncate max-w-[150px]">{activeHotel?.name || 'Hotel Pulse'}</span>
                 <ChevronDown className="w-3 h-3 text-slate-400" />
               </button>
 
@@ -99,7 +114,7 @@ export const Header: React.FC = () => {
                           setHotelDropdownOpen(false);
                         }}
                         className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors ${
-                          activeHotel.id === hotel.id
+                          activeHotel?.id === hotel.id
                             ? 'text-amber-400 font-semibold bg-slate-800/50'
                             : hasOperationalData
                             ? 'text-slate-300 hover:bg-slate-800'
@@ -116,7 +131,7 @@ export const Header: React.FC = () => {
                             <div className="text-[10px] text-amber-500/80 mt-0.5">Demo próximamente</div>
                           )}
                         </div>
-                        {activeHotel.id === hotel.id && <span className="text-xs text-amber-400">●</span>}
+                        {activeHotel?.id === hotel.id && <span className="text-xs text-amber-400">●</span>}
                       </button>
                     );
                   })}
@@ -177,10 +192,12 @@ export const Header: React.FC = () => {
                   ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
               }`}
-              title={`Personal Operativo: ${currentStaffMember.name}`}
+              title={`Personal Operativo: ${currentStaffMember?.name || 'Personal'}`}
             >
               <HardHat className="w-3.5 h-3.5" />
-              <span className="hidden lg:inline">3. Personal ({currentStaffMember.name.split(' ')[0]})</span>
+              <span className="hidden lg:inline">
+                3. Personal ({currentStaffMember?.name ? currentStaffMember.name.split(' ')[0] : 'Equipo'})
+              </span>
               <span className="lg:hidden">Personal</span>
               {staffActiveTasks > 0 && (
                 <span className="inline-flex items-center justify-center px-1.5 py-0.2 text-[10px] font-extrabold rounded-full bg-amber-400 text-slate-950">

@@ -20,7 +20,8 @@ export const ExperiencesView: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const hotelExperiences = experiences.filter((exp) => exp.hotelId === activeHotel.id);
+  const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
+  const hotelExperiences = experiences.filter((exp) => exp.hotelId === activeHotelId);
 
   const filtered = hotelExperiences.filter((exp) => {
     if (filterCategory !== 'all' && exp.category !== filterCategory) return false;

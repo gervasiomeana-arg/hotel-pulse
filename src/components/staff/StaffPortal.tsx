@@ -17,6 +17,7 @@ import {
 export const StaffPortal: React.FC = () => {
   const {
     staff,
+    activeHotel,
     currentStaffId,
     setCurrentStaffId,
     requests,
@@ -27,7 +28,23 @@ export const StaffPortal: React.FC = () => {
   const [filterView, setFilterView] = useState<'my_tasks' | 'all_sector'>('my_tasks');
   const [completionNotes, setCompletionNotes] = useState<Record<string, string>>({});
 
-  const currentStaff = staff.find((s) => s.id === currentStaffId) || staff[0];
+  const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
+  const hotelStaff = staff.filter((s) => s.hotelId === activeHotelId);
+  const currentStaff =
+    staff.find((s) => s.id === currentStaffId && s.hotelId === activeHotelId) ||
+    staff.find((s) => s.id === currentStaffId) ||
+    hotelStaff[0] ||
+    staff[0] || {
+      id: 'staff-fallback',
+      hotelId: activeHotelId,
+      name: 'Personal Operativo',
+      sector: 'housekeeping' as const,
+      roleTitle: 'Operativo de Turno',
+      phone: '',
+      activeTasks: 0,
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+      status: 'disponible' as const,
+    };
 
   // Filter tasks for this staff member
   const myTasks = requests.filter(
@@ -58,21 +75,21 @@ export const StaffPortal: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <img
-              src={currentStaff.avatar}
-              alt={currentStaff.name}
+              src={currentStaff?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
+              alt={currentStaff?.name || 'Personal'}
               className="w-12 h-12 rounded-2xl object-cover border-2 border-amber-400 shadow-md"
             />
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-extrabold text-white font-['Outfit']">
-                  {currentStaff.name}
+                  {currentStaff?.name || 'Personal Operativo'}
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   En Guardia
                 </span>
               </div>
-              <p className="text-xs text-amber-400 font-medium">{currentStaff.roleTitle}</p>
-              <p className="text-[11px] text-slate-400">Sector: {currentStaff.sector.toUpperCase()}</p>
+              <p className="text-xs text-amber-400 font-medium">{currentStaff?.roleTitle || 'Operativo de Turno'}</p>
+              <p className="text-[11px] text-slate-400">Sector: {currentStaff?.sector ? currentStaff.sector.toUpperCase() : 'GENERAL'}</p>
             </div>
           </div>
 
@@ -88,7 +105,7 @@ export const StaffPortal: React.FC = () => {
             >
               {staff.map((member) => (
                 <option key={member.id} value={member.id}>
-                  {member.name} ({member.sector})
+                  {member?.name || 'Sin nombre'} ({member?.sector || 'general'})
                 </option>
               ))}
             </select>

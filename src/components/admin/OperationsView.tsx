@@ -46,8 +46,9 @@ export const OperationsView: React.FC = () => {
   // Quick assign modal
   const [assigningReqId, setAssigningReqId] = useState<string | null>(null);
 
-  const hotelRooms = rooms.filter((room) => room.hotelId === activeHotel.id);
-  const hotelRequests = requests.filter((req) => req.hotelId === activeHotel.id);
+  const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
+  const hotelRooms = rooms.filter((room) => room.hotelId === activeHotelId);
+  const hotelRequests = requests.filter((req) => req.hotelId === activeHotelId);
 
   // Filter logic
   const filteredRequests = hotelRequests.filter((req) => {
@@ -467,13 +468,13 @@ export const OperationsView: React.FC = () => {
                 >
                   <div className="flex items-center gap-3">
                     <img
-                      src={member.avatar}
-                      alt={member.name}
+                      src={member?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
+                      alt={member?.name || 'Personal'}
                       className="w-9 h-9 rounded-full object-cover border border-slate-200"
                     />
                     <div>
-                      <div className="text-xs font-bold text-slate-900">{member.name}</div>
-                      <div className="text-[11px] text-slate-500">{member.roleTitle}</div>
+                      <div className="text-xs font-bold text-slate-900">{member?.name || 'Personal Operativo'}</div>
+                      <div className="text-[11px] text-slate-500">{member?.roleTitle || 'Operativo'}</div>
                     </div>
                   </div>
                   <div className="text-right text-[11px]">

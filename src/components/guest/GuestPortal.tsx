@@ -37,8 +37,31 @@ export const GuestPortal: React.FC = () => {
   const [mobileFrameMode, setMobileFrameMode] = useState<boolean>(true);
 
   // Active room data
-  const currentRoom = rooms.find((r) => r.number === guestRoomNumber) || rooms[0];
-  const guestName = currentRoom.currentGuest?.name || 'Sofía Martínez';
+  const activeHotelId = activeHotel?.id || 'hotel-grand-pulse';
+  const hotelRooms = rooms.filter((r) => r.hotelId === activeHotelId);
+  const currentRoom =
+    rooms.find((r) => r.number === guestRoomNumber && r.hotelId === activeHotelId) ||
+    rooms.find((r) => r.number === guestRoomNumber) ||
+    hotelRooms[0] ||
+    rooms[0] || {
+      id: 'room-default',
+      hotelId: activeHotelId,
+      number: guestRoomNumber || '304',
+      type: 'Deluxe Suite' as const,
+      floor: 3,
+      status: 'ocupada' as const,
+      currentGuest: {
+        name: 'Sofía Martínez',
+        checkIn: '18 Sep, 15:00',
+        checkOut: '21 Sep, 11:00',
+        phone: '+54 9 11 3321-9988',
+        guestsCount: 2,
+        vip: true,
+      },
+      activeIssuesCount: 0,
+      activeRequestsCount: 0,
+    };
+  const guestName = currentRoom?.currentGuest?.name || 'Sofía Martínez';
 
   // Requests for this room
   const roomRequests = requests.filter((r) => r.roomNumber === guestRoomNumber);
@@ -199,7 +222,7 @@ export const GuestPortal: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-[11px] uppercase tracking-wider text-amber-300 font-bold">
-              {activeHotel.name}
+              {activeHotel?.name || 'Hotel Pulse'}
             </span>
           </div>
 

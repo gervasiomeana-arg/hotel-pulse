@@ -28,7 +28,7 @@ export const ConfigurationView: React.FC = () => {
     <div className="space-y-6 pb-12">
       <div>
         <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">Configuración</span>
-        <h1 className="text-2xl font-extrabold text-slate-900 font-['Outfit']">Preparar {activeHotel.name}</h1>
+        <h1 className="text-2xl font-extrabold text-slate-900 font-['Outfit']">Preparar {activeHotel?.name || 'Hotel Pulse'}</h1>
         <p className="text-sm text-slate-500 mt-1">Carga operativa inicial para incorporar un hotel sin modificar código.</p>
       </div>
 
@@ -78,7 +78,7 @@ export const ConfigurationView: React.FC = () => {
           <input className={inputClass} placeholder="Proveedor" value={serviceProvider} onChange={(e) => setServiceProvider(e.target.value)} />
           <input className={inputClass} type="number" min="0" placeholder="Precio USD" value={servicePrice} onChange={(e) => setServicePrice(Number(e.target.value))} />
           <input className={inputClass} type="number" min="0" max="100" placeholder="Comisión %" value={commissionRate} onChange={(e) => setCommissionRate(Number(e.target.value))} />
-          <button className={buttonClass} disabled={!serviceTitle.trim() || servicePrice <= 0} onClick={() => { addExperience({ title: serviceTitle.trim(), category: 'actividades', provider: serviceProvider.trim() || activeHotel.name, providerType: 'externo', price: servicePrice, hotelCommissionRate: commissionRate, availability: 'con_reserva_previa', active: true, image: '', description: 'Servicio configurado por el hotel.' }); setServiceTitle(''); setServiceProvider(''); setServicePrice(0); }}>
+          <button className={buttonClass} disabled={!serviceTitle.trim() || servicePrice <= 0} onClick={() => { addExperience({ title: serviceTitle.trim(), category: 'actividades', provider: serviceProvider.trim() || activeHotel?.name || 'Hotel Pulse', providerType: 'externo', price: servicePrice, hotelCommissionRate: commissionRate, availability: 'con_reserva_previa', active: true, image: '', description: 'Servicio configurado por el hotel.' }); setServiceTitle(''); setServiceProvider(''); setServicePrice(0); }}>
             <Plus className="w-4 h-4" /> Publicar servicio
           </button>
         </section>
