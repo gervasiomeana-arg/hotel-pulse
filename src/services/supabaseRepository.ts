@@ -3,6 +3,12 @@ import { PersistedHotelPulseState } from './persistence';
 import { HotelPulseRepository } from './backendContract';
 import { supabase } from './supabaseClient';
 
+export interface AuthorizedMembership {
+  hotelId: string;
+  role: 'admin' | 'reception' | 'staff';
+  staffId?: string;
+}
+
 type CollectionKey = Exclude<keyof PersistedHotelPulseState, 'version'>;
 
 const tables: Record<CollectionKey, string> = {
@@ -25,6 +31,18 @@ export const getAuthorizedHotels = async (): Promise<Hotel[]> => {
   const { data, error } = await requireClient().from('hotels').select('id,name,code,city,total_rooms,rating,logo_text').order('name');
   if (error) throw error;
   return (data ?? []).map((hotel) => ({ id: hotel.id, name: hotel.name, code: hotel.code, city: hotel.city, totalRooms: hotel.total_rooms, rating: Number(hotel.rating), logoText: hotel.logo_text }));
+};
+
+export const getAuthorizedMemberships = async (): Promise<AuthorizedMembership[]> => {
+  const { data, error } = await requireClient()
+    .from('hotel_members')
+    .select('hotel_id,role,staff_id');
+  if (error) throw error;
+  return (data ?? []).map((membership) => ({
+    hotelId: membership.hotel_id,
+    role: membership.role,
+    staffId: membership.staff_id || undefined,
+  }));
 };
 
 const loadCollection = async <T>(table: string, hotelId: string): Promise<T[]> => {
