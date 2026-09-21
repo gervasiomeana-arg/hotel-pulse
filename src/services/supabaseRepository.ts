@@ -91,11 +91,14 @@ export const getAuthorizedMemberships = async (): Promise<AuthorizedMembership[]
       .from('hotel_members')
       .select('hotel_id,role,staff_id');
     if (error) throw error;
-    return (data ?? []).map((membership) => ({
+    const memberships = (data ?? []).map((membership) => ({
       hotelId: membership.hotel_id,
-      role: membership.role,
+      role: membership.role as HotelPulseSession['role'],
       staffId: membership.staff_id || undefined,
     }));
+    rolesByHotel.clear();
+    memberships.forEach((membership) => rolesByHotel.set(membership.hotelId, membership.role));
+    return memberships;
   });
 };
 
