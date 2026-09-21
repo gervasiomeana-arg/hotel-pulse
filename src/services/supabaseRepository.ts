@@ -1,6 +1,6 @@
 import { Hotel } from '../types';
 import { PersistedHotelPulseState } from './persistence';
-import { HotelPulseRepository } from './backendContract';
+import { HotelPulseRepository, HotelPulseSession } from './backendContract';
 import { supabase } from './supabaseClient';
 
 export interface AuthorizedMembership {
@@ -20,10 +20,17 @@ const tables: Record<CollectionKey, string> = {
   experiences: 'experience_services',
 };
 
+const writableCollections: Record<HotelPulseSession['role'], CollectionKey[]> = {
+  admin: ['rooms', 'staff', 'requests', 'incidents', 'opportunities', 'experiences'],
+  reception: ['requests', 'incidents', 'opportunities'],
+  staff: ['requests', 'incidents'],
+};
+
 type CollectionSnapshot = Map<string, string>;
 
 const snapshots = new Map<string, Partial<Record<CollectionKey, CollectionSnapshot>>>();
 const saveQueues = new Map<string, Promise<void>>();
+const rolesByHotel = new Map<string, HotelPulseSession['role']>();
 
 const requireClient = () => {
   if (!supabase) throw new Error('Supabase no está configurado. Revisá VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY.');
@@ -41,11 +48,14 @@ export const getAuthorizedMemberships = async (): Promise<AuthorizedMembership[]
     .from('hotel_members')
     .select('hotel_id,role,staff_id');
   if (error) throw error;
-  return (data ?? []).map((membership) => ({
+  const memberships = (data ?? []).map((membership) => ({
     hotelId: membership.hotel_id,
-    role: membership.role,
+    role: membership.role as HotelPulseSession['role'],
     staffId: membership.staff_id || undefined,
   }));
+  rolesByHotel.clear();
+  memberships.forEach((membership) => rolesByHotel.set(membership.hotelId, membership.role));
+  return memberships;
 };
 
 const loadCollection = async <T>(table: string, hotelId: string): Promise<T[]> => {
@@ -93,12 +103,14 @@ export const supabaseRepository: HotelPulseRepository = {
     return state;
   },
   async saveState(hotelId, state) {
+    const role = rolesByHotel.get(hotelId);
+    if (!role) throw new Error('No hay una membresía autorizada para guardar cambios en este hotel.');
     const queuedSave = (saveQueues.get(hotelId) ?? Promise.resolve())
       .catch(() => undefined)
       .then(async () => {
         const previous = snapshots.get(hotelId) ?? {};
         const nextSnapshots = { ...previous };
-        await Promise.all((Object.keys(tables) as CollectionKey[]).map(async (key) => {
+        await Promise.all(writableCollections[role].map(async (key) => {
           const values = state[key].filter((item) => item.hotelId === hotelId);
           nextSnapshots[key] = await saveCollection(tables[key], hotelId, values, previous[key] ?? new Map());
         }));
