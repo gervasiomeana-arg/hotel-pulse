@@ -67,6 +67,8 @@ El modo local continúa disponible por defecto. Para habilitar persistencia comp
 4. Crear cada usuario en **Authentication → Users** y agregar su UUID a `hotel_members` con el rol correspondiente.
 5. Configurar las variables del archivo `.env.example` y establecer `VITE_DATA_SOURCE="remote"`.
 
+Para habilitar **¿Olvidaste tu contraseña?**, configurar en **Authentication → URL Configuration** la URL pública de la aplicación como `Site URL` y agregarla a `Redirect URLs`. Supabase enviará el enlace de recuperación a esa dirección y Hotel Pulse mostrará el formulario para definir la nueva contraseña.
+
 En modo remoto la aplicación exige autenticación. Las políticas RLS derivan los hoteles autorizados de `auth.uid()` y de `hotel_members`; nunca confían en un `hotelId` enviado por el navegador como prueba de acceso.
 
 ```sql
