@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useHotelPulse } from '../../context/HotelPulseContext';
+import { getConfiguredDataSource } from '../../services/backendContract';
 import { Room } from '../../types';
 import {
   BedDouble,
@@ -16,7 +17,8 @@ import {
 } from 'lucide-react';
 
 export const RoomsView: React.FC = () => {
-  const { activeHotel, rooms, setGuestRoomNumber, setCurrentRole, requests, incidents } = useHotelPulse();
+  const remoteMode = getConfiguredDataSource() === 'remote';
+  const { activeHotel, rooms, setGuestRoomNumber, setCurrentRole, requests, incidents, showToast } = useHotelPulse();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterFloor, setFilterFloor] = useState<string>('all');
   const [selectedRoomForQr, setSelectedRoomForQr] = useState<Room | null>(null);
@@ -24,16 +26,42 @@ export const RoomsView: React.FC = () => {
   const hotelRooms = rooms.filter((room) => room.hotelId === activeHotel.id);
   const hotelRequests = requests.filter((request) => request.hotelId === activeHotel.id);
   const hotelIncidents = incidents.filter((incident) => incident.hotelId === activeHotel.id);
+  const getOperationalStatus = (room: Room): Room['status'] => {
+    const hasOpenIncident = hotelIncidents.some(
+      (incident) => incident.roomNumber === room.number && incident.status !== 'reparado'
+    );
+    return hasOpenIncident ? 'mantenimiento' : room.status;
+  };
 
   const filteredRooms = hotelRooms.filter((r) => {
-    if (filterStatus !== 'all' && r.status !== filterStatus) return false;
+    if (filterStatus !== 'all' && getOperationalStatus(r) !== filterStatus) return false;
     if (filterFloor !== 'all' && r.floor.toString() !== filterFloor) return false;
     return true;
   });
 
   const handleOpenGuestPortal = (roomNumber: string) => {
+    if (remoteMode) {
+      showToast(
+        'Portal protegido',
+        'El acceso real del huésped requiere un enlace temporal asociado a la estadía. La simulación sólo está disponible en modo demo.',
+        'warning'
+      );
+      return;
+    }
     setGuestRoomNumber(roomNumber);
     setCurrentRole('guest');
+  };
+
+  const handleOpenQr = (room: Room) => {
+    if (remoteMode) {
+      showToast(
+        'QR todavía no emitido',
+        'Para producción se generará un QR firmado y temporal; no se muestra un enlace ficticio.',
+        'warning'
+      );
+      return;
+    }
+    setSelectedRoomForQr(room);
   };
 
   return (
@@ -84,17 +112,18 @@ export const RoomsView: React.FC = () => {
         {filteredRooms.map((room) => {
           const roomRequests = hotelRequests.filter((r) => r.roomNumber === room.number && r.status !== 'resuelta');
           const roomIncidents = hotelIncidents.filter((i) => i.roomNumber === room.number && i.status !== 'reparado');
+          const operationalStatus = getOperationalStatus(room);
 
           let statusClass = 'bg-emerald-50 text-emerald-800 border-emerald-200';
           let statusText = 'Disponible';
 
-          if (room.status === 'ocupada') {
+          if (operationalStatus === 'ocupada') {
             statusClass = 'bg-sky-50 text-sky-800 border-sky-200';
             statusText = 'Ocupada';
-          } else if (room.status === 'limpieza') {
+          } else if (operationalStatus === 'limpieza') {
             statusClass = 'bg-amber-50 text-amber-800 border-amber-200';
             statusText = 'Limpieza';
-          } else if (room.status === 'mantenimiento') {
+          } else if (operationalStatus === 'mantenimiento') {
             statusClass = 'bg-rose-50 text-rose-800 border-rose-200';
             statusText = 'Mantenimiento';
           }
@@ -175,9 +204,9 @@ export const RoomsView: React.FC = () => {
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                 <button
                   id={`view-qr-room-${room.number}`}
-                  onClick={() => setSelectedRoomForQr(room)}
-                  className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-                  title="Ver código QR de acceso para la habitación"
+                  onClick={() => handleOpenQr(room)}
+                  className={`p-1.5 rounded-lg transition-colors ${remoteMode ? 'text-amber-600 hover:bg-amber-50' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}
+                  title={remoteMode ? 'El QR de producción requiere un token temporal' : 'Ver código QR de acceso para la habitación'}
                 >
                   <QrCode className="w-4 h-4" />
                 </button>
@@ -185,9 +214,9 @@ export const RoomsView: React.FC = () => {
                 <button
                   id={`enter-guest-portal-room-${room.number}`}
                   onClick={() => handleOpenGuestPortal(room.number)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all"
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-white rounded-lg text-xs font-bold transition-all ${remoteMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-slate-900 hover:bg-slate-800'}`}
                 >
-                  <span>Abrir Portal Huésped</span>
+                  <span>{remoteMode ? 'Portal con acceso seguro' : 'Abrir Portal Huésped'}</span>
                   <ExternalLink className="w-3 h-3" />
                 </button>
               </div>
