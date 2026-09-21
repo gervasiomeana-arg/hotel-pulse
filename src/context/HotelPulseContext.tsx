@@ -27,6 +27,7 @@ import {
 } from '../data/initialData';
 import { clearPersistedState, loadPersistedState, savePersistedState } from '../services/persistence';
 import { getConfiguredDataSource } from '../services/backendContract';
+import { supabase } from '../services/supabaseClient';
 import { AuthorizedMembership, getAuthorizedHotels, getAuthorizedMemberships, supabaseRepository } from '../services/supabaseRepository';
 
 export type AdminViewType = 'dashboard' | 'operaciones' | 'habitaciones' | 'mantenimiento' | 'oportunidades' | 'experiencias' | 'configuracion';
@@ -110,6 +111,7 @@ interface HotelPulseContextType {
   prevTourStep: () => void;
   remoteSaveError: string;
   retryRemoteSave: () => void;
+  retryRemoteLoad: () => void;
 }
 
 const HotelPulseContext = createContext<HotelPulseContextType | undefined>(undefined);
@@ -122,11 +124,18 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [availableHotels, setAvailableHotels] = useState<Hotel[]>(remoteMode ? [] : INITIAL_HOTELS);
   const [remoteHotelsLoaded, setRemoteHotelsLoaded] = useState(!remoteMode);
   const [remoteLoadError, setRemoteLoadError] = useState('');
+  const [remoteLoadRevision, setRemoteLoadRevision] = useState(0);
   const [remoteSaveError, setRemoteSaveError] = useState('');
   const [remoteSaveRevision, setRemoteSaveRevision] = useState(0);
   const [activeHotel, setActiveHotel] = useState<Hotel>(INITIAL_HOTELS[0]);
   const [guestRoomNumber, setGuestRoomNumber] = useState<string>('304');
   const [currentStaffId, setCurrentStaffId] = useState<string>('staff-1');
+
+  const retryRemoteLoad = () => {
+    setRemoteLoadError('');
+    setRemoteHotelsLoaded(false);
+    setRemoteLoadRevision((prev) => prev + 1);
+  };
 
   // State collections
   const [rooms, setRooms] = useState<Room[]>(remoteMode ? [] : initialPersistedState?.rooms ?? INITIAL_ROOMS);
@@ -159,6 +168,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   useEffect(() => {
     if (!remoteMode) return;
     let active = true;
+    setRemoteLoadError('');
     Promise.all([getAuthorizedHotels(), getAuthorizedMemberships()]).then(([hotels, memberships]) => {
       if (!active) return;
       setRemoteLoadError('');
@@ -179,12 +189,12 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }).catch((error) => {
       console.error('No se pudieron cargar los hoteles autorizados de Supabase:', error);
       setAvailableHotels([]);
-      setRemoteLoadError('No pudimos consultar tus hoteles autorizados. Revisá la conexión e intentá iniciar sesión nuevamente.');
+      setRemoteLoadError('No pudimos consultar tus hoteles autorizados. Revisá la conexión e intentá nuevamente.');
     }).finally(() => {
       if (active) setRemoteHotelsLoaded(true);
     });
     return () => { active = false; };
-  }, [remoteMode]);
+  }, [remoteMode, remoteLoadRevision]);
 
   useEffect(() => {
     if (!remoteMode) return;
@@ -214,7 +224,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setRemoteLoadError('No pudimos cargar la información operativa del hotel. No se realizaron cambios.');
     });
     return () => { active = false; };
-  }, [remoteMode, remoteHotelsLoaded, activeHotel?.id]);
+  }, [remoteMode, remoteHotelsLoaded, activeHotel?.id, remoteLoadRevision]);
 
   useEffect(() => {
     if (!remoteMode || remoteHydratedHotelId !== activeHotel.id) return;
@@ -631,7 +641,43 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const loadingMessage = remoteHotelsLoaded
       ? 'Cargando la información operativa del hotel seleccionado.'
       : 'Buscando los hoteles autorizados para tu usuario.';
-    return <main className="min-h-screen bg-slate-950 grid place-items-center p-6"><div className="max-w-lg rounded-3xl bg-white p-8"><h1 className="text-xl font-bold text-slate-900">{remoteLoadError ? 'No se pudo abrir Hotel Pulse' : 'Cargando Hotel Pulse…'}</h1><p className="mt-2 text-slate-600">{remoteLoadError || loadingMessage}</p></div></main>;
+    return (
+      <main className="min-h-screen bg-slate-950 grid place-items-center p-6">
+        <div className="w-full max-w-lg rounded-3xl bg-white p-8 shadow-2xl">
+          <p className="text-xs font-bold tracking-[0.24em] text-amber-600">HOTEL PULSE</p>
+          <h1 className="mt-3 text-xl font-bold text-slate-900">
+            {remoteLoadError ? 'No se pudo abrir Hotel Pulse' : 'Cargando Hotel Pulse…'}
+          </h1>
+          <p className="mt-2 text-sm text-slate-600 leading-relaxed">{remoteLoadError || loadingMessage}</p>
+          {remoteLoadError ? (
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={retryRemoteLoad}
+                className="rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors shadow-sm"
+              >
+                Reintentar conexión
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (supabase) await supabase.auth.signOut();
+                  window.location.reload();
+                }}
+                className="rounded-xl border border-slate-300 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                Cerrar sesión
+              </button>
+            </div>
+          ) : (
+            <div className="mt-6 flex items-center gap-2.5 text-xs font-semibold text-slate-500">
+              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-amber-500" />
+              Sincronizando con el servidor seguro…
+            </div>
+          )}
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -682,6 +728,7 @@ export const HotelPulseProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         prevTourStep,
         remoteSaveError,
         retryRemoteSave,
+        retryRemoteLoad,
       }}
     >
       {children}
